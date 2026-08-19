@@ -1,0 +1,5 @@
+torch>=2.0.0
+sentence-transformers>=2.2.0
+transformers>=4.30.0
+optimum>=1.10.0
+onnxscript>=0.1.0

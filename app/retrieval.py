@@ -3,27 +3,40 @@ import json
 import logging
 from typing import List, Dict, Any, Optional
 import numpy as np
-from sentence_transformers import SentenceTransformer
+import onnxruntime as ort
+from tokenizers import Tokenizer
 
 logger = logging.getLogger("governance_api.retrieval")
 
-MODEL_NAME = "all-MiniLM-L6-v2"
 INDEX_DIR = "data"
+ONNX_MODEL_PATH = os.path.join(INDEX_DIR, "model.onnx")
+TOKENIZER_DIR = os.path.join(INDEX_DIR, "tokenizer")
 
-# Load model once at import / startup
-logger.info(f"Loading retrieval model '{MODEL_NAME}'...")
-try:
-    _model = SentenceTransformer(MODEL_NAME)
-except Exception as e:
-    logger.error(f"Failed to load sentence-transformers model: {e}")
-    _model = None
-
-# In-memory index cache: { index_name: {"vecs": np.ndarray, "chunks": list, "meta": list} }
+_session: Optional[ort.InferenceSession] = None
+_tokenizer: Optional[Tokenizer] = None
 INDEXES: Dict[str, Dict[str, Any]] = {}
 
 
+def init_onnx_embedder():
+    global _session, _tokenizer
+    tokenizer_json = os.path.join(TOKENIZER_DIR, "tokenizer.json")
+    if os.path.exists(ONNX_MODEL_PATH) and os.path.exists(tokenizer_json):
+        try:
+            logger.info("Initializing ONNX Runtime inference session...")
+            _session = ort.InferenceSession(ONNX_MODEL_PATH)
+            _tokenizer = Tokenizer.from_file(tokenizer_json)
+            _tokenizer.enable_truncation(max_length=512)
+            _tokenizer.enable_padding(length=512)
+            logger.info("ONNX Runtime query embedder ready.")
+        except Exception as e:
+            logger.error(f"Failed to initialize ONNX embedder: {e}")
+            _session = None
+            _tokenizer = None
+    else:
+        logger.warning(f"ONNX model or tokenizer not found at '{ONNX_MODEL_PATH}' / '{TOKENIZER_DIR}'.")
+
+
 def load_indexes():
-    """Loads all available .npz files into memory once at startup."""
     global INDEXES
     INDEXES.clear()
     
@@ -58,18 +71,47 @@ def load_indexes():
                 logger.error(f"Failed to load index '{filename}': {e}")
 
 
-# Initialize indexes on module load
+# Initialize ONNX embedder and load indexes at module load
+init_onnx_embedder()
 load_indexes()
+
+
+def encode_query_onnx(query: str) -> np.ndarray:
+    if _session is None or _tokenizer is None:
+        raise RuntimeError("ONNX embedder is not initialized.")
+
+    encoding = _tokenizer.encode(query)
+    input_ids = np.array([encoding.ids], dtype=np.int64)
+    attention_mask = np.array([encoding.attention_mask], dtype=np.int64)
+    token_type_ids = np.array([encoding.type_ids], dtype=np.int64)
+
+    ort_inputs = {
+        "input_ids": input_ids,
+        "attention_mask": attention_mask,
+        "token_type_ids": token_type_ids
+    }
+    
+    outputs = _session.run(None, ort_inputs)
+    last_hidden_state = outputs[0]
+
+    mask_expanded = np.expand_dims(attention_mask, -1).astype(float)
+    sum_embeddings = np.sum(last_hidden_state * mask_expanded, axis=1)
+    sum_mask = np.clip(mask_expanded.sum(axis=1), a_min=1e-9, a_max=None)
+    mean_pooled = sum_embeddings / sum_mask
+
+    norm = np.linalg.norm(mean_pooled, axis=1, keepdims=True)
+    norm[norm == 0] = 1.0
+    return (mean_pooled / norm)[0].astype(np.float32)
 
 
 def search(index_name: str, query: str, k: int = 5) -> List[Dict[str, Any]]:
     """
-    Synchronous vector dot-product search.
+    Synchronous vector search using ONNX query embeddings.
     Returns list of dicts: [{"text": str, "score": float, "meta": dict}]
-    If index_name is not found, logs warning and returns [].
+    If index_name is missing, logs warning and returns [].
     """
-    if _model is None:
-        logger.warning("Retrieval model is not initialized.")
+    if _session is None or _tokenizer is None:
+        logger.warning("ONNX embedder is not ready.")
         return []
 
     if index_name not in INDEXES:
@@ -84,13 +126,10 @@ def search(index_name: str, query: str, k: int = 5) -> List[Dict[str, Any]]:
     if len(chunks) == 0:
         return []
 
-    # Encode query and normalize
-    q_vec = _model.encode(query, convert_to_numpy=True)
-    norm = np.linalg.norm(q_vec)
-    if norm > 0:
-        q_vec = q_vec / norm
+    # Fast ONNX query embedding
+    q_vec = encode_query_onnx(query)
 
-    # Compute dot product similarities
+    # Dot-product similarities
     scores = vecs @ q_vec
     top_indices = np.argsort(scores)[::-1][:k]
 
