@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aayera Ahmad — AI &amp; Cloud Engineer</title>
+<meta name="description" content="AI &amp; Cloud Engineer in Bengaluru. Four years building LLM applications, RAG pipelines and agentic workflows. Three governance tools you can run in the browser.">
+<meta property="og:title" content="Aayera Ahmad — AI &amp; Cloud Engineer">
+<meta property="og:description" content="Three AI governance tools you can run right now: hiring bias detection, EU AI Act compliance, and hallucination measurement.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400;12..96,75..100,600;12..96,75..100,800&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E4E6EA; --card:#F7F8FA; --ink:#16181D; --ink-soft:#565C69;
+  --rule:#C6C9D1; --high:#B33A2B; --med:#C4772A; --low:#7A7F8C; --clear:#2E6B5E;
+  --display:"Bricolage Grotesque",sans-serif;
+  --body:"Newsreader",Georgia,serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:0 28px}
+
+.masthead{display:flex;justify-content:space-between;align-items:baseline;padding:26px 0;border-bottom:1px solid var(--rule);flex-wrap:wrap;gap:12px}
+.wordmark{font-family:var(--display);font-weight:800;font-size:17px;letter-spacing:-.01em}
+.masthead nav{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.masthead nav a{color:var(--ink-soft);text-decoration:none;margin-left:18px}
+.masthead nav a:hover{color:var(--ink)}
+
+.hero{padding:72px 0 60px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:22px}
+.hero h1{font-family:var(--display);font-weight:400;font-size:clamp(2.1rem,5.4vw,3.5rem);line-height:1.06;letter-spacing:-.025em;max-width:16ch}
+.hero h1 em{font-style:normal;font-weight:800}
+.hero .lede{margin-top:24px;max-width:54ch;font-size:1.15rem;color:var(--ink-soft);font-weight:300}
+
+.specimen{margin-top:52px;background:var(--card);border:1px solid var(--rule);padding:34px 32px 26px}
+.specimen-label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);padding-bottom:14px;margin-bottom:22px;border-bottom:1px solid var(--rule)}
+.specimen p{font-size:1.32rem;line-height:1.85;font-weight:300}
+.flag{position:relative;padding-bottom:1px;cursor:help;background-image:linear-gradient(to right,currentColor,currentColor);background-repeat:no-repeat;background-position:0 100%;background-size:0% 2px;animation:draw .5s ease forwards}
+@keyframes draw{to{background-size:100% 2px}}
+.flag[data-sev="high"]{color:var(--high)}
+.flag[data-sev="med"]{color:var(--med)}
+.flag .note{position:absolute;left:0;top:calc(100% + 8px);font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none}
+.flag:hover .note,.flag:focus .note{opacity:1}
+.specimen-foot{margin-top:26px;padding-top:16px;border-top:1px solid var(--rule);font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);display:flex;gap:26px;flex-wrap:wrap}
+
+section.block{padding:70px 0;border-top:1px solid var(--rule)}
+.secname{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:30px}
+h2.big{font-family:var(--display);font-weight:800;font-size:clamp(1.5rem,3.4vw,2.1rem);letter-spacing:-.02em;line-height:1}
+.statement{font-size:1.3rem;line-height:1.7;font-weight:300;max-width:60ch}
+.statement strong{font-weight:400;color:var(--ink)}
+
+.role{display:grid;grid-template-columns:180px 1fr;gap:28px}
+.role-meta .org{font-family:var(--display);font-weight:600;font-size:1rem;line-height:1.3}
+.role-meta .when,.role-meta .where{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);margin-top:6px;letter-spacing:.03em}
+.role-body h3{font-family:var(--display);font-weight:800;font-size:1.3rem;letter-spacing:-.01em;margin-bottom:14px}
+.role-body ul{list-style:none}
+.role-body li{position:relative;padding-left:20px;margin-bottom:11px;font-weight:300;color:var(--ink-soft);font-size:1.02rem}
+.role-body li::before{content:"";position:absolute;left:0;top:.72em;width:8px;height:1px;background:var(--ink-soft)}
+
+.skillgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:32px}
+.skillgroup h4{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);padding-bottom:10px;border-bottom:1px solid var(--rule);margin-bottom:14px}
+.skillgroup p{font-weight:300;font-size:1rem;color:var(--ink-soft);line-height:1.75}
+
+.certlist{list-style:none;max-width:70ch}
+.certlist li{padding:14px 0;border-bottom:1px solid var(--rule);display:flex;justify-content:space-between;gap:20px;align-items:baseline;font-weight:300}
+.certlist .issuer{font-family:var(--mono);font-size:11px;color:var(--ink-soft);letter-spacing:.04em;white-space:nowrap}
+
+.project{padding:76px 0;border-top:1px solid var(--rule)}
+.project-head{display:flex;gap:20px;align-items:baseline;margin-bottom:8px;flex-wrap:wrap}
+.project-head .num{font-family:var(--mono);font-size:12px;color:var(--ink-soft);letter-spacing:.08em}
+.project .why{max-width:62ch;margin-top:18px;color:var(--ink-soft);font-weight:300}
+.stack{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+.chip{font-family:var(--mono);font-size:11px;letter-spacing:.04em;border:1px solid var(--rule);padding:4px 9px;color:var(--ink-soft)}
+.repo{display:inline-block;margin-top:20px;font-family:var(--mono);font-size:12px;letter-spacing:.05em;color:var(--ink);border-bottom:1px solid var(--ink);text-decoration:none;padding-bottom:2px}
+.repo:hover{color:var(--high);border-color:var(--high)}
+
+.console{margin-top:34px;background:var(--card);border:1px solid var(--rule)}
+.console-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--rule);font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft);gap:12px}
+.status{display:flex;align-items:center;gap:7px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--low);flex:none}
+.dot.live{background:var(--clear)}
+.console-body{padding:20px 18px}
+.privacy{font-family:var(--mono);font-size:10.5px;line-height:1.7;color:var(--ink-soft);letter-spacing:.02em;margin-bottom:14px;padding-left:11px;border-left:2px solid var(--rule)}
+label.fieldlabel{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:8px}
+textarea,input[type=text],input[type=number],select{width:100%;font-family:var(--body);font-size:1rem;line-height:1.6;padding:13px 14px;border:1px solid var(--rule);background:#fff;color:var(--ink);resize:vertical}
+select{font-family:var(--mono);font-size:.85rem}
+textarea:focus,input:focus,select:focus{outline:2px solid var(--ink);outline-offset:-1px}
+textarea{min-height:112px}
+.row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-top:14px}
+.row>div{flex:1;min-width:150px}
+.actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center}
+.count{font-family:var(--mono);font-size:11px;color:var(--ink-soft);margin-left:auto}
+.count.over{color:var(--high)}
+button{font-family:var(--mono);font-size:12px;letter-spacing:.07em;text-transform:uppercase;padding:11px 18px;border:1px solid var(--ink);background:var(--ink);color:var(--card);cursor:pointer;transition:.15s}
+button:hover{background:var(--high);border-color:var(--high)}
+button.ghost{background:transparent;color:var(--ink)}
+button.ghost:hover{background:var(--ink);color:var(--card);border-color:var(--ink)}
+button:disabled{opacity:.4;cursor:wait}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--high);outline-offset:3px}
+
+.out{margin-top:22px;padding-top:20px;border-top:1px solid var(--rule);display:none}
+.out.show{display:block}
+.verdict{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding-bottom:16px;margin-bottom:16px;border-bottom:1px solid var(--rule)}
+.verdict .big{font-family:var(--display);font-weight:800;font-size:2rem;letter-spacing:-.02em;line-height:1}
+.verdict .cap{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-soft)}
+.redline{background:#fff;border:1px solid var(--rule);padding:20px 22px;font-size:1.08rem;line-height:2;font-weight:300;margin-bottom:20px}
+.redline mark{background:none;padding-bottom:1px;border-bottom:2px solid currentColor;cursor:help}
+.redline mark[data-sev=gender]{color:var(--high)}
+.redline mark[data-sev=age]{color:var(--med)}
+.redline mark[data-sev=cultural]{color:#6B4C9A}
+.finding{padding:15px 0;border-bottom:1px solid var(--rule)}
+.finding:last-child{border-bottom:none}
+.finding-top{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:7px}
+.sev{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:3px 7px;color:#fff;flex:none}
+.sev.high{background:var(--high)} .sev.med{background:var(--med)}
+.sev.low{background:var(--low)} .sev.clear{background:var(--clear)}
+.finding-name{font-family:var(--display);font-weight:600;font-size:1.05rem}
+.art{font-family:var(--mono);font-size:11px;color:var(--ink-soft);letter-spacing:.05em}
+.finding p{font-size:.97rem;color:var(--ink-soft);font-weight:300}
+.terms{display:flex;gap:6px;flex-wrap:wrap;margin:9px 0}
+.term{font-family:var(--mono);font-size:11px;background:var(--paper);border:1px solid var(--rule);padding:3px 8px}
+.fix{margin-top:9px;padding-left:13px;border-left:2px solid var(--clear);font-size:.95rem;color:var(--ink-soft);font-weight:300}
+.src{margin-top:9px;padding:10px 13px;background:var(--paper);border:1px solid var(--rule);font-size:.85rem;font-weight:300;color:var(--ink-soft);line-height:1.6}
+.src b{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:400;display:block;margin-bottom:5px;color:var(--ink)}
+.qa .q{font-weight:400;font-size:.99rem}
+.qa .a{color:var(--ink-soft);font-weight:300;margin-top:4px;font-size:.97rem}
+.err{font-family:var(--mono);font-size:11.5px;color:var(--high);line-height:1.7}
+
+.datapanel{background:var(--card);border:1px solid var(--rule);padding:26px 28px;max-width:70ch}
+.datapanel dt{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);margin-top:16px}
+.datapanel dt:first-child{margin-top:0}
+.datapanel dd{font-weight:300;color:var(--ink-soft);font-size:.98rem;margin-top:5px}
+
+footer{border-top:1px solid var(--rule);padding:56px 0 70px}
+footer h2{font-family:var(--display);font-weight:800;font-size:clamp(1.4rem,3vw,1.9rem);letter-spacing:-.02em;margin-bottom:24px}
+footer .links{display:flex;gap:26px;flex-wrap:wrap;font-family:var(--mono);font-size:12.5px}
+footer a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule);padding-bottom:2px}
+footer a:hover{border-color:var(--ink)}
+footer .fine{margin-top:32px;font-family:var(--mono);font-size:11px;color:var(--ink-soft);line-height:1.9}
+
+@media (max-width:700px){
+  body{font-size:17px}
+  .hero{padding:52px 0 40px}
+  .specimen{padding:24px 20px 20px}
+  .specimen p{font-size:1.12rem;line-height:1.9}
+  .project,section.block{padding:52px 0}
+  .role{grid-template-columns:1fr;gap:14px}
+  .masthead nav a{margin-left:0;margin-right:16px}
+  .certlist li{flex-direction:column;gap:6px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .flag{background-size:100% 2px}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="wordmark">Aayera Ahmad</div>
+  <nav>
+    <a href="#work">Work</a>
+    <a href="#bias">Demos</a>
+    <a href="#skills">Skills</a>
+    <a href="#contact">Contact</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <div class="eyebrow">AI &amp; Cloud Engineer · Bengaluru</div>
+  <h1>Most AI harm is <em>written down</em> before anyone notices it.</h1>
+  <p class="lede">Four years building LLM applications, RAG pipelines and agentic workflows at Harman. The three tools below audit AI systems and the text around them — grounded in retrieved sources rather than model memory. All three are live. Run them on your own text.</p>
+
+  <div class="specimen">
+    <div class="specimen-label">Specimen — job posting, flagged in place</div>
+    <p>We're hiring a <span class="flag" data-sev="high" tabindex="0">young, energetic salesman<span class="note">age + gender</span></span> with <span class="flag" data-sev="med" tabindex="0">10+ years experience<span class="note">age proxy</span></span>. He should be a <span class="flag" data-sev="high" tabindex="0">cultural fit for our Western team<span class="note">cultural</span></span>.</p>
+    <div class="specimen-foot"><span>3 findings</span><span>bias score 0.92</span><span>hover a mark</span></div>
+  </div>
+</section>
+
+<section class="block" id="about">
+  <div class="secname">Positioning</div>
+  <p class="statement" id="r-summary"></p>
+</section>
+
+<section class="block" id="work">
+  <div class="secname">Experience</div>
+  <div id="r-experience"></div>
+</section>
+
+<section class="project" id="bias">
+  <div class="project-head"><span class="num">01</span><h2 class="big">AI Hiring Bias Detector</h2></div>
+  <p class="why">I reviewed a stack of engineering job descriptions at work and found them loaded with gendered phrasing and age assumptions — "rockstar ninja," "digital native," fifteen years of experience with a three-year-old framework. Nobody writes that on purpose. They copy a template, and qualified people quietly don't apply. Flags are matched against a curated lexicon rather than generated freehand, so the same posting scores the same way twice.</p>
+  <div class="stack"><span class="chip">FastAPI</span><span class="chip">LangChain</span><span class="chip">Gemini</span><span class="chip">RAG</span><span class="chip">Docker</span><span class="chip">Cloud Run</span></div>
+  <a class="repo" href="https://github.com/aayeraahmad531/AI-Hiring-Bias-Detector" target="_blank" rel="noopener">Source on GitHub →</a>
+
+  <div class="console">
+    <div class="console-bar"><span>POST /api/bias</span><span class="status"><span class="dot" id="dot-bias"></span><span id="mode-bias">sample mode</span></span></div>
+    <div class="console-body">
+      <p class="privacy">Your text is sent to Google Gemini and may be used to improve their models. Nothing is logged or stored here. Don't paste confidential or personal data.</p>
+      <label class="fieldlabel" for="in-bias">Paste your own job posting</label>
+      <textarea id="in-bias" maxlength="2000" oninput="count('bias')">We are looking for a young, energetic salesman with 10+ years experience. He should be a cultural fit for our Western team and a real rockstar who can crush targets.</textarea>
+      <div class="actions">
+        <button onclick="runBias(this)">Run audit</button>
+        <button class="ghost" onclick="resetBias()">Reset</button>
+        <span class="count" id="c-bias"></span>
+      </div>
+      <div class="out" id="out-bias"></div>
+    </div>
+  </div>
+</section>
+
+<section class="project" id="compliance">
+  <div class="project-head"><span class="num">02</span><h2 class="big">EU AI Act Compliance Checker</h2></div>
+  <p class="why">I spent too many hours reading EU AI Act PDFs while reviewing AI features, looking up the same article numbers repeatedly. Models get article numbers wrong confidently, so this one doesn't ask it to remember them — the Act is chunked and embedded, the relevant articles are retrieved first, and any citation the model produces that isn't in the retrieved set gets dropped before it reaches you.</p>
+  <div class="stack"><span class="chip">FastAPI</span><span class="chip">LangChain</span><span class="chip">Gemini</span><span class="chip">Embeddings</span><span class="chip">Docker</span><span class="chip">Cloud Run</span></div>
+  <a class="repo" href="https://github.com/aayeraahmad531/ai-policy-compliance-checker" target="_blank" rel="noopener">Source on GitHub →</a>
+
+  <div class="console">
+    <div class="console-bar"><span>POST /api/compliance</span><span class="status"><span class="dot" id="dot-comp"></span><span id="mode-comp">sample mode</span></span></div>
+    <div class="console-body">
+      <p class="privacy">Your text is sent to Google Gemini and may be used to improve their models. Nothing is logged or stored here. Don't paste confidential system details.</p>
+      <label class="fieldlabel" for="in-comp">Describe an AI system or feature</label>
+      <textarea id="in-comp" maxlength="2000" oninput="count('comp')">Our AI model automatically rejects credit applications for applicants living in specific postal codes without human intervention.</textarea>
+      <div class="row"><div><label class="fieldlabel" for="ctx-comp">Context</label><input type="text" id="ctx-comp" maxlength="200" value="Fintech automated lending system"></div></div>
+      <div class="actions">
+        <button onclick="runComp(this)">Check compliance</button>
+        <button class="ghost" onclick="resetComp()">Reset</button>
+        <span class="count" id="c-comp"></span>
+      </div>
+      <div class="out" id="out-comp"></div>
+    </div>
+  </div>
+</section>
+
+<section class="project" id="hallucination">
+  <div class="project-head"><span class="num">03</span><h2 class="big">LLM Hallucination Tester</h2></div>
+  <p class="why">Built because I was tired of models stating nonsense with total confidence. Three stages: generate verifiable questions, answer them, then grade each answer. The grading is the part that matters — instead of asking a second model whether the first one was right, each answer is checked against retrieved reference passages, and the supporting passage comes back with the verdict so you can see what the judgement rested on.</p>
+  <div class="stack"><span class="chip">FastAPI</span><span class="chip">LangChain</span><span class="chip">Gemini</span><span class="chip">Async pipeline</span><span class="chip">Docker</span><span class="chip">Cloud Run</span></div>
+  <a class="repo" href="https://github.com/aayeraahmad531/llm-hallucination-tester" target="_blank" rel="noopener">Source on GitHub →</a>
+
+  <div class="console">
+    <div class="console-bar"><span>POST /api/hallucination</span><span class="status"><span class="dot" id="dot-hall"></span><span id="mode-hall">sample mode</span></span></div>
+    <div class="console-body">
+      <p class="privacy">Topics are limited to the indexed reference corpus, so every verdict can be checked against a real source rather than another model's memory.</p>
+      <div class="row" style="margin-top:0">
+        <div>
+          <label class="fieldlabel" for="in-hall">Topic</label>
+          <select id="in-hall">
+            <option>Discovery of Radium</option>
+            <option>The Apollo 11 mission</option>
+            <option>The EU AI Act</option>
+            <option>Photosynthesis</option>
+            <option>The Indian Space Research Organisation</option>
+          </select>
+        </div>
+        <div style="max-width:150px">
+          <label class="fieldlabel" for="n-hall">Questions</label>
+          <input type="number" id="n-hall" value="3" min="1" max="3">
+        </div>
+      </div>
+      <div class="actions">
+        <button onclick="runHall(this)">Run test</button>
+        <button class="ghost" onclick="resetHall()">Reset</button>
+      </div>
+      <div class="out" id="out-hall"></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="skills">
+  <div class="secname">Skills</div>
+  <div class="skillgrid" id="r-skills"></div>
+</section>
+
+<section class="block" id="certs">
+  <div class="secname">Certifications</div>
+  <ul class="certlist" id="r-certs"></ul>
+</section>
+
+<section class="block" id="education">
+  <div class="secname">Education</div>
+  <div id="r-education"></div>
+</section>
+
+<section class="block" id="data">
+  <div class="secname">How these demos handle your data</div>
+  <dl class="datapanel">
+    <dt>What is sent</dt><dd>Only the text you type into a demo box, capped at 2,000 characters. Nothing else about you or your browser.</dd>
+    <dt>Where it goes</dt><dd>A container on Google Cloud Run that wakes on request and sleeps after, which calls the Google Gemini API. Free-tier prompts may be used by Google to improve their models.</dd>
+    <dt>What is retained</dt><dd>Nothing. Request bodies are never logged — only timestamp, path and status code are recorded.</dd>
+    <dt>Limits</dt><dd>Five runs per hour per visitor, and outbound model calls are capped at two concurrently. When a limit is reached you'll see a cached sample result rather than an error.</dd>
+    <dt>Uploads</dt><dd>Not accepted. File parsing exists in the repositories but is deliberately left out of the public demos.</dd>
+  </dl>
+</section>
+
+<footer id="contact">
+  <h2>Open to AI engineering roles</h2>
+  <div class="links" id="r-links"></div>
+  <p class="fine" id="r-fine"></p>
+</footer>
+
+</div>
+
+<script>
+/* ============================================================
+   1. PASTE YOUR DEPLOYED CLOUD RUN URL HERE (no trailing slash)
+   Leave as null and every demo runs on cached samples.
+   ============================================================ */
+const API_BASE = null;   // e.g. "https://governance-api-xxxxx.a.run.app"
+
+/* ============================================================
+   2. RESUME — the page renders from this object. Edit here only.
+   ============================================================ */
+const RESUME = {
+  name:"Aayera Ahmad",
+  title:"AI & Cloud Engineer",
+  location:"Bengaluru, India",
+  email:"aayera1029@gmail.com",
+  phone:"+91 7408478673",
+  linkedin:"https://linkedin.com/in/aayeraahmad531",
+  github:"https://github.com/aayeraahmad531",
+  resumePdf:"Aayera_Ahmad_CV.pdf",
+
+  summary:"I build <strong>LLM-powered applications, RAG pipelines and agentic workflows</strong>, and deploy them as containerised services on GCP. Four years at Harman Connected Services across cloud infrastructure and generative AI, with Google certifications in Generative AI, Vertex AI, Agentic AI and Responsible AI. The work I care most about is <strong>making model output trustworthy enough to ship</strong> — grounding answers in verified sources, evaluating across model families, and knowing what a system does when it is wrong.",
+
+  experience:[{
+    role:"Engineer — AI & Cloud",
+    org:"Harman Connected Services",
+    where:"Bengaluru",
+    when:"Mar 2022 — Present",
+    bullets:[
+      "Developed LLM-powered applications and conversational agents using OpenAI and Gemini APIs with LangChain, reducing manual effort across business workflows.",
+      "Built and optimised RAG pipelines using vector databases and embedding models to ground LLM responses in verified sources and reduce hallucinations.",
+      "Applied prompt engineering including few-shot prompting and structured outputs to improve response consistency across production use cases.",
+      "Engineered FastAPI microservices connecting LLM APIs and Vertex AI endpoints to internal tools and data pipelines.",
+      "Deployed containerised AI services on GCP Cloud Run with GitHub Actions CI/CD, logging and monitoring.",
+      "Ran model evaluation across OpenAI, Gemini and Vertex AI families, assessing accuracy, latency and cost to guide model selection.",
+      "Contributed to GCP infrastructure work supporting AI service delivery, including Cloud Run deployments and backend API integration."
+    ]
+  }],
+
+  skills:[
+    {group:"AI & LLMs", items:"OpenAI · Gemini · Vertex AI · LangChain · LangGraph · Prompt engineering · RAG pipelines · Agentic AI · Vector databases · Embeddings · Model evaluation · LLM orchestration"},
+    {group:"Cloud & Backend", items:"GCP (Cloud Run, Vertex AI, Cloud SQL) · Python · FastAPI · REST APIs · Docker · CI/CD with GitHub Actions"},
+    {group:"Practices", items:"Prompt optimisation · Model evaluation · Responsible AI · Agile and Scrum · JIRA"}
+  ],
+
+  certifications:[
+    {name:"AI Agents Intensive — Agentic AI & Multi-Agent Systems", issuer:"Kaggle & Google · 2025"},
+    {name:"Generative AI with Vertex AI", issuer:"Google Cloud · 2026"},
+    {name:"Introduction to Large Language Models", issuer:"Google Cloud · 2026"},
+    {name:"Prompt Design", issuer:"Google Cloud · 2026"},
+    {name:"Responsible AI", issuer:"Google Cloud · 2026"},
+    {name:"Serverless Applications on Cloud Run", issuer:"Google Cloud · 2025"},
+    {name:"CI/CD Pipelines on Google Cloud", issuer:"Google Cloud · 2025"}
+  ],
+
+  education:[{
+    degree:"B.Tech — Information Technology",
+    school:"Dr. A.P.J. Abdul Kalam Technical University, Lucknow",
+    when:"2018 — 2022",
+    note:"CGPA 7.28"
+  }]
+};
+
+/* ---------- cached samples (zero API cost) ---------- */
+const SAMPLE = {
+  bias:{overall_bias_score:0.92,
+    spans:[{text:"young, energetic salesman",category:"gender"},{text:"10+ years experience",category:"age"},{text:"cultural fit for our Western team",category:"cultural"},{text:"rockstar",category:"gender"}],
+    categories:[
+      {bias_type:"gender",detected:true,confidence:.85,examples:["salesman","he","rockstar","crush targets"],suggestion:"Replace gendered titles and pronouns with neutral equivalents, and swap aggressive masculine-coded verbs for plain descriptions of the work."},
+      {bias_type:"age",detected:true,confidence:.96,examples:["young","energetic","10+ years"],suggestion:"Remove youth-coded adjectives and re-check whether the years requirement is genuinely essential at this level."},
+      {bias_type:"cultural",detected:true,confidence:.94,examples:["Western team","cultural fit"],suggestion:"Replace subjective cultural criteria with objective competencies and stated company values."}],
+    summary:"Flagged bias across 3 categories. Revisions recommended before publishing."},
+  comp:{compliant:false,score:50,
+    summary:"The described lending system breaches core EU AI Act requirements. Automatic denial without human review conflicts with Article 14, and postal code as a decision input creates proxy discrimination risk under Article 10.",
+    violations:[
+      {principle:"Human oversight",severity:"high",article_reference:"Art. 14",description:"Fully automated credit denial with no human review or appeal path fails oversight requirements for high-risk systems.",action:"Add a mandatory human review step before any final rejection is issued.",source:"High-risk AI systems shall be designed and developed in such a way that they can be effectively overseen by natural persons during the period in which they are in use."},
+      {principle:"Non-discrimination",severity:"high",article_reference:"Art. 10",description:"Postal code is a documented proxy for race and income, producing indirect discriminatory impact.",action:"Drop geographic features from decision inputs and run demographic parity tests on the remainder.",source:"Training, validation and testing data sets shall be subject to data governance appropriate to the intended purpose, including examination in view of possible biases."}]},
+  hall:{topic:"Discovery of Radium",questions_tested:3,hallucination_rate:.33,
+    results:[
+      {question:"Who discovered radium?",answer:"Marie and Pierre Curie discovered radium.",verdict:"ACCURATE",confidence:1,reasoning:"Matches the retrieved passage directly.",source:"Radium was discovered in 1898 by Marie and Pierre Curie, who extracted it from pitchblende residues."},
+      {question:"In what year was radium isolated in pure metallic form?",answer:"1902, by Marie Curie alone.",verdict:"HALLUCINATED",confidence:.9,reasoning:"The retrieved passage gives 1910 and names two people. 1902 was the year radium chloride was isolated, not the metal.",source:"Pure metallic radium was first isolated in 1910 by Marie Curie and André-Louis Debierne through electrolysis."},
+      {question:"What element was discovered alongside radium?",answer:"Polonium, earlier the same year.",verdict:"ACCURATE",confidence:.95,reasoning:"Consistent with the retrieved passage.",source:"The Curies announced polonium in July 1898 and radium in December of the same year."}]}
+};
+
+/* ---------- render resume ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => {const d=document.createElement("div");d.textContent=(s==null?"":s);return d.innerHTML};
+
+$("r-summary").innerHTML = RESUME.summary;
+
+$("r-experience").innerHTML = RESUME.experience.map(r=>`
+  <div class="role">
+    <div class="role-meta">
+      <div class="org">${esc(r.org)}</div>
+      <div class="when">${esc(r.when)}</div>
+      <div class="where">${esc(r.where)}</div>
+    </div>
+    <div class="role-body">
+      <h3>${esc(r.role)}</h3>
+      <ul>${r.bullets.map(b=>`<li>${esc(b)}</li>`).join("")}</ul>
+    </div>
+  </div>`).join("");
+
+$("r-skills").innerHTML = RESUME.skills.map(s=>
+  `<div class="skillgroup"><h4>${esc(s.group)}</h4><p>${esc(s.items)}</p></div>`).join("");
+
+$("r-certs").innerHTML = RESUME.certifications.map(c=>
+  `<li><span>${esc(c.name)}</span><span class="issuer">${esc(c.issuer)}</span></li>`).join("");
+
+$("r-education").innerHTML = RESUME.education.map(e=>`
+  <div class="role">
+    <div class="role-meta"><div class="org">${esc(e.school)}</div><div class="when">${esc(e.when)}</div><div class="where">${esc(e.note)}</div></div>
+    <div class="role-body"><h3>${esc(e.degree)}</h3></div>
+  </div>`).join("");
+
+$("r-links").innerHTML = [
+  ["Email","mailto:"+RESUME.email],["GitHub",RESUME.github],
+  ["LinkedIn",RESUME.linkedin],["Résumé (PDF)",RESUME.resumePdf]
+].map(([l,h])=>`<a href="${esc(h)}"${h.indexOf("http")===0?' target="_blank" rel="noopener"':""}>${esc(l)}</a>`).join("");
+
+$("r-fine").innerHTML = esc(RESUME.location)+" · "+esc(RESUME.phone)+
+  "<br>Demos call a service that sleeps when idle. The first run may take a few seconds to wake it.";
+
+/* ---------- plumbing ---------- */
+if(API_BASE){["bias","comp","hall"].forEach(k=>{$("dot-"+k).classList.add("live");$("mode-"+k).textContent="live"})}
+
+let warmed=false;
+if(API_BASE && "IntersectionObserver" in window){
+  const io=new IntersectionObserver(function(es){
+    if(!warmed && es.some(e=>e.isIntersecting)){warmed=true;io.disconnect();fetch(API_BASE+"/health").catch(()=>{})}
+  },{rootMargin:"100% 0px"});
+  io.observe($("bias"));
+}
+
+function count(k){
+  const el=$("in-"+k),c=$("c-"+k);if(!el||!c)return;
+  const n=el.value.length;c.textContent=n+" / 2000";c.classList.toggle("over",n>2000);
+}
+count("bias");count("comp");
+
+async function call(key,path,payload,btn,label){
+  if(!API_BASE) return {data:SAMPLE[key],cached:true};
+  btn.disabled=true;btn.textContent="Running…";
+  try{
+    const ctrl=new AbortController(),t=setTimeout(()=>ctrl.abort(),60000);
+    const r=await fetch(API_BASE+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),signal:ctrl.signal});
+    clearTimeout(t);
+    if(r.status===429) return {error:"Hourly limit reached. Showing a cached result.",data:SAMPLE[key],cached:true};
+    if(r.status===422) return {error:"Input rejected — check the length limit.",data:SAMPLE[key],cached:true};
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    return {data:await r.json(),cached:false};
+  }catch(e){
+    return {error:"Service didn't respond. Showing a cached result.",data:SAMPLE[key],cached:true};
+  }finally{btn.disabled=false;btn.textContent=label}
+}
+const banner = r => r.error?'<p class="err">'+esc(r.error)+'</p>':(r.cached?'<p class="err">Cached sample — no live service configured yet.</p>':"");
+const sevCls = s => ({high:"high",medium:"med",med:"med",low:"low"})[String(s).toLowerCase()]||"low";
+
+function redline(text,spans){
+  if(!spans||!spans.length) return esc(text);
+  const marks=[];
+  spans.forEach(s=>{const i=text.indexOf(s.text);if(i>=0)marks.push({s:i,e:i+s.text.length,c:s.category||"gender"})});
+  marks.sort((a,b)=>a.s-b.s);
+  let out="",pos=0;
+  marks.forEach(m=>{if(m.s<pos)return;out+=esc(text.slice(pos,m.s));out+='<mark data-sev="'+esc(m.c)+'" title="'+esc(m.c)+'">'+esc(text.slice(m.s,m.e))+'</mark>';pos=m.e});
+  return out+esc(text.slice(pos));
+}
+
+/* ---------- 01 ---------- */
+async function runBias(btn){
+  const box=$("out-bias"),text=$("in-bias").value;
+  box.classList.add("show");box.innerHTML='<p class="err">Working…</p>';
+  const res=await call("bias","/api/bias",{job_description:text,analysis_type:["gender","age","cultural"]},btn,"Run audit");
+  const d=res.data;
+  let h=banner(res)+'<div class="verdict"><span class="big">'+Math.round(d.overall_bias_score*100)+'%</span><span class="cap">bias score · '+d.categories.filter(c=>c.detected).length+' categories flagged</span></div>';
+  h+='<div class="redline">'+redline(text,d.spans)+'</div>';
+  d.categories.forEach(c=>{
+    h+='<div class="finding"><div class="finding-top">'+
+       '<span class="sev '+(c.detected?(c.confidence>.9?"high":"med"):"clear")+'">'+(c.detected?"flagged":"clear")+'</span>'+
+       '<span class="finding-name">'+esc(c.bias_type)+'</span>'+
+       '<span class="art">confidence '+Math.round(c.confidence*100)+'%</span></div>'+
+       '<div class="terms">'+(c.examples||[]).map(e=>'<span class="term">'+esc(e)+'</span>').join("")+'</div>'+
+       '<div class="fix">'+esc(c.suggestion)+'</div></div>';
+  });
+  if(d.summary)h+='<p class="fix" style="margin-top:18px">'+esc(d.summary)+'</p>';
+  box.innerHTML=h;
+}
+function resetBias(){$("in-bias").value="We are looking for a young, energetic salesman with 10+ years experience. He should be a cultural fit for our Western team and a real rockstar who can crush targets.";count("bias");$("out-bias").classList.remove("show")}
+
+/* ---------- 02 ---------- */
+async function runComp(btn){
+  const box=$("out-comp");
+  box.classList.add("show");box.innerHTML='<p class="err">Retrieving relevant articles…</p>';
+  const res=await call("comp","/api/compliance",{content:$("in-comp").value,context:$("ctx-comp").value},btn,"Check compliance");
+  const d=res.data,recs=d.recommendations||[];
+  let h=banner(res)+'<div class="verdict"><span class="big" style="color:'+(d.compliant?"var(--clear)":"var(--high)")+'">'+(d.compliant?"Compliant":"Not compliant")+'</span><span class="cap">score '+d.score+'/100 · '+(d.violations||[]).length+' violations</span></div>';
+  (d.violations||[]).forEach(v=>{
+    const fix=v.action||(recs.find(r=>r.principle===v.principle)||{}).action||"";
+    h+='<div class="finding"><div class="finding-top">'+
+       '<span class="sev '+sevCls(v.severity)+'">'+esc(v.severity)+'</span>'+
+       '<span class="finding-name">'+esc(v.principle)+'</span>'+
+       '<span class="art">'+esc(v.article_reference)+'</span></div>'+
+       '<p>'+esc(v.description)+'</p>'+
+       (fix?'<div class="fix">'+esc(fix)+'</div>':"")+
+       (v.source?'<div class="src"><b>Retrieved source</b>'+esc(v.source)+'</div>':"")+'</div>';
+  });
+  if(d.summary)h+='<p class="fix" style="margin-top:18px">'+esc(d.summary)+'</p>';
+  box.innerHTML=h;
+}
+function resetComp(){$("in-comp").value="Our AI model automatically rejects credit applications for applicants living in specific postal codes without human intervention.";$("ctx-comp").value="Fintech automated lending system";count("comp");$("out-comp").classList.remove("show")}
+
+/* ---------- 03 ---------- */
+async function runHall(btn){
+  const box=$("out-hall");
+  box.classList.add("show");box.innerHTML='<p class="err">Generating questions, answering, then grading against sources. This takes a few seconds…</p>';
+  const res=await call("hall","/api/hallucination",{topic:$("in-hall").value,num_questions:Math.min(3,+$("n-hall").value||3)},btn,"Run test");
+  const d=res.data;
+  let h=banner(res)+'<div class="verdict"><span class="big" style="color:'+(d.hallucination_rate>0?"var(--high)":"var(--clear)")+'">'+Math.round(d.hallucination_rate*100)+'%</span><span class="cap">hallucination rate · '+d.questions_tested+' questions on '+esc(d.topic)+'</span></div>';
+  (d.results||[]).forEach(r=>{
+    const v=String(r.verdict).toUpperCase();
+    const cls=v==="ACCURATE"?"clear":(v==="HALLUCINATED"?"high":"med");
+    h+='<div class="finding"><div class="finding-top">'+
+       '<span class="sev '+cls+'">'+esc(v)+'</span><span class="art">confidence '+Math.round(r.confidence*100)+'%</span></div>'+
+       '<div class="qa"><div class="q">'+esc(r.question)+'</div><div class="a">'+esc(r.answer)+'</div></div>'+
+       '<div class="fix">'+esc(r.reasoning)+'</div>'+
+       (r.source?'<div class="src"><b>Graded against</b>'+esc(r.source)+'</div>':"")+'</div>';
+  });
+  box.innerHTML=h;
+}
+function resetHall(){$("in-hall").selectedIndex=0;$("n-hall").value=3;$("out-hall").classList.remove("show")}
+</script>
+</body>
+</html>
