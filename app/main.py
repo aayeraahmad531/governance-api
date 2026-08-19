@@ -1,7 +1,7 @@
 import logging
 import time
 from datetime import datetime, timezone
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -57,6 +57,14 @@ async def custom_validation_error_handler(request: Request, exc: RequestValidati
     )
 
 
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
+
+
 @app.exception_handler(UpstreamUnavailable)
 async def custom_upstream_handler(request: Request, exc: UpstreamUnavailable):
     return JSONResponse(
@@ -73,9 +81,26 @@ async def custom_schema_handler(request: Request, exc: SchemaValidationFailed):
     )
 
 
+@app.exception_handler(Exception)
+async def custom_unhandled_exception_handler(request: Request, exc: Exception):
+    # Privacy commitment: log ONLY exception type and path, NEVER traceback frame locals
+    timestamp = datetime.now(timezone.utc).isoformat()
+    logger.error(f"[{timestamp}] PATH={request.url.path} ERROR={type(exc).__name__}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "An internal server error occurred."}
+    )
+
+
 @app.get("/health")
 async def health_check():
     return {"status": "ok"}
+
+
+@app.post("/api/debug-crash")
+async def debug_crash(request: Request):
+    """Debug route for privacy canary 500 test."""
+    raise RuntimeError("Simulated crash for privacy canary test")
 
 
 app.include_router(bias.router)
