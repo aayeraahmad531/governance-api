@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EU AI Act Compliance Checker — Aayera Ahmad</title>
+<meta name="description" content="Audits an AI system description against six EU AI Act principles, citing only articles it actually retrieved. Run it on your own system.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400;12..96,75..100,600;12..96,75..100,800&family=Newsreader:opsz,wght@6..72,300;6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>document.documentElement.className="js"</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="masthead on-dark">
+  <div class="inner">
+    <a class="wordmark" href="index.html">Aayera Ahmad</a>
+    <nav><a href="index.html#projects">All projects</a><a href="index.html#contact">Contact</a></nav>
+  </div>
+</header>
+
+<section class="phero">
+  <div class="wrap">
+    <a class="back" href="index.html#projects">← Projects</a>
+    <div class="num">Project 02</div>
+    <h1>EU AI Act Compliance Checker</h1>
+    <p class="sub">Audits an AI system against six principles from the Act — and cites only articles it actually retrieved, never one recalled from memory.</p>
+    <div class="meta">
+      <div>Stack<b>FastAPI · LangChain · Gemini</b></div>
+      <div>Corpus<b>298 chunks · Art. 1–113</b></div>
+      <div>Version<b>02024R1689-20260727</b></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+
+<section class="block" style="border-top:none">
+  <div class="secname rv">The problem</div>
+  <p class="statement rv">I spent too many hours reading EU AI Act PDFs while reviewing AI features at work, looking up the same article numbers over and over. The obvious fix is to ask a model — but models get article numbers wrong, confidently and often. A compliance tool that invents a citation is worse than no tool at all.</p>
+  <p class="statement rv" style="margin-top:22px;color:var(--ink-soft)">So this one never asks the model to remember. The consolidated Act is chunked and embedded, the relevant articles are retrieved first, and <strong>any citation the model produces that isn't in the retrieved set gets dropped</strong> before it reaches you. The retrieved passage is shown under every violation, so you can check the judgement against the text yourself.</p>
+</section>
+
+<section class="block">
+  <div class="secname rv">How it works</div>
+  <div class="pipe rv">
+    <div class="stage"><div class="n">01</div><h4>Embed</h4><p>Your description is embedded locally with MiniLM — no network call, sub-millisecond.</p></div>
+    <div class="stage key"><div class="n">02</div><h4>Retrieve</h4><p>A dot product across 298 indexed Act chunks returns the eight most relevant articles with their metadata.</p></div>
+    <div class="stage"><div class="n">03</div><h4>Evaluate</h4><p>The model assesses six principles using only the retrieved text as its source of law.</p></div>
+    <div class="stage"><div class="n">04</div><h4>Verify</h4><p>Citations outside the retrieved set are dropped and counted. What survives is traceable.</p></div>
+  </div>
+  <p class="lede rv" style="margin-top:26px">The six principles: transparency, human oversight, accuracy and robustness, non-discrimination, privacy, accountability.</p>
+</section>
+
+<section class="block" id="try">
+  <div class="secname rv">Try it</div>
+  <h2 class="big rv">Describe a system and see what the Act says.</h2>
+  <p class="lede rv" style="margin-top:18px">The sample is a classic high-risk case. Swap in something from your own product.</p>
+
+  <div class="console rv">
+    <div class="console-bar"><span>POST /api/compliance</span><span class="status"><span class="dot" id="dot-comp"></span><span id="mode-comp">sample mode</span></span></div>
+    <div class="console-body">
+      <p class="privacy">Your text is sent to Google Gemini and may be used to improve their models. Nothing is logged or stored here. Don't paste confidential system details.</p>
+      <label class="fieldlabel" for="in-comp">AI system or feature description</label>
+      <textarea id="in-comp" maxlength="2000" oninput="count('comp')">Our AI model automatically rejects credit applications for applicants living in specific postal codes without human intervention.</textarea>
+      <div class="row"><div><label class="fieldlabel" for="ctx-comp">Context</label><input type="text" id="ctx-comp" maxlength="200" value="Fintech automated lending system"></div></div>
+      <div class="actions">
+        <button onclick="runComp(this)">Check compliance</button>
+        <button class="ghost" onclick="resetComp()">Reset</button>
+        <span class="count" id="c-comp"></span>
+      </div>
+      <div class="out" id="out-comp"></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="secname rv">Under the hood</div>
+  <pre class="code rv"><span class="k">POST</span> /api/compliance
+{ "content": "...", "context": "..." }
+
+<span class="k">200</span>
+{
+  "compliant": false,
+  "score": 50,
+  "violations": [
+    { "principle": "Human oversight",
+      "severity": "high",
+      "article_reference": "Art. 14",
+      "description": "...",
+      "action": "...",
+      "source": "&lt;the retrieved passage itself&gt;" }
+  ],
+  "summary": "..."
+}</pre>
+  <p class="lede rv" style="margin-top:24px">The <code style="font-family:var(--mono);font-size:.85em">source</code> field is the point of the whole design. Every violation carries the text it was derived from, so a claim about Article 14 can be checked without leaving the page.</p>
+  <p class="rv" style="margin-top:24px"><a href="https://github.com/aayeraahmad531/ai-policy-compliance-checker" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--ink);padding-bottom:3px;text-decoration:none">Source on GitHub →</a></p>
+</section>
+
+<div class="nextup">
+  <a href="hallucination.html">
+    <div>
+      <div class="lbl">Next project</div>
+      <h3>LLM Hallucination Tester</h3>
+    </div>
+    <div class="lbl">03 →</div>
+  </a>
+</div>
+
+<footer>
+  <h2>Open to AI engineering roles</h2>
+  <div class="links" id="r-links"></div>
+  <p class="fine" id="r-fine"></p>
+</footer>
+
+</div>
+
+<script src="assets/site.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",function(){markLive("comp");count("comp");warmOn("try")});
+</script>
+</body>
+</html>

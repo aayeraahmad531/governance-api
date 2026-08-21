@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aayera Ahmad — AI &amp; Cloud Engineer</title>
+<meta name="description" content="AI &amp; Cloud Engineer in Bengaluru. Four years building LLM applications, RAG pipelines and agentic workflows. Three governance tools you can run in the browser.">
+<meta property="og:title" content="Aayera Ahmad — AI &amp; Cloud Engineer">
+<meta property="og:description" content="Three AI governance tools you can run right now: hiring bias detection, EU AI Act compliance, and hallucination measurement.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400;12..96,75..100,600;12..96,75..100,800&family=Newsreader:opsz,wght@6..72,300;6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>document.documentElement.className="js"</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="inner">
+    <a class="wordmark" href="index.html">Aayera Ahmad</a>
+    <nav>
+      <a href="#work">Work</a><a href="#projects">Projects</a><a href="#skills">Skills</a><a href="#contact">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section class="hero">
+  <div class="eyebrow rv">AI &amp; Cloud Engineer · Bengaluru</div>
+  <h1 class="lead rv">Most AI harm is <em>written down</em> before anyone notices it.</h1>
+  <p class="lede rv">Four years building LLM applications, RAG pipelines and agentic workflows at Harman. The three tools below audit AI systems and the text around them — grounded in retrieved sources rather than model memory. All three are live. Run them on your own text.</p>
+
+  <div class="specimen rv">
+    <div class="specimen-label">Specimen — job posting, flagged in place</div>
+    <p>We're hiring a <span class="flag" data-sev="gender" tabindex="0">young, energetic salesman<span class="note">age + gender</span></span> with <span class="flag" data-sev="age" tabindex="0">10+ years experience<span class="note">age proxy</span></span>. He should be a <span class="flag" data-sev="cultural" tabindex="0">cultural fit for our Western team<span class="note">cultural</span></span>.</p>
+    <div class="specimen-foot"><span>3 findings</span><span>bias score 0.92</span><span>hover a mark</span></div>
+  </div>
+</section>
+
+<section class="block" id="about">
+  <div class="secname rv">Positioning</div>
+  <p class="statement rv" id="r-summary"></p>
+</section>
+
+<section class="block" id="projects">
+  <div class="secname rv">Projects — all three run in your browser</div>
+  <div class="cards rv">
+
+    <a class="pcard" href="bias.html">
+      <div class="pcard-top"><span class="num">01</span><h3>AI Hiring Bias Detector</h3></div>
+      <p>Reads a job posting and underlines the language that quietly screens people out — gendered titles, age proxies, cultural gatekeeping — with a replacement for each.</p>
+      <div class="peek">
+        <span class="pill high">gender</span><span class="pill med">age</span><span class="pill violet">cultural</span>
+        <span class="pill ghost">lexicon-grounded</span>
+      </div>
+      <div class="go">Try it <span>→</span></div>
+    </a>
+
+    <a class="pcard" href="compliance.html">
+      <div class="pcard-top"><span class="num">02</span><h3>EU AI Act Compliance Checker</h3></div>
+      <p>Audits an AI system description against six principles from the Act, and cites only articles it actually retrieved — never an article number recalled from model memory.</p>
+      <div class="peek">
+        <span class="pill high">Art. 14</span><span class="pill high">Art. 10</span>
+        <span class="pill ghost">298 indexed chunks</span>
+      </div>
+      <div class="go">Try it <span>→</span></div>
+    </a>
+
+    <a class="pcard" href="hallucination.html">
+      <div class="pcard-top"><span class="num">03</span><h3>LLM Hallucination Tester</h3></div>
+      <p>Generates factual questions on a topic, answers them, then grades each answer against retrieved reference passages — and shows you the passage the verdict rested on.</p>
+      <div class="peek">
+        <span class="pill clear">accurate</span><span class="pill high">hallucinated</span>
+        <span class="pill ghost">source-graded</span>
+      </div>
+      <div class="go">Try it <span>→</span></div>
+    </a>
+
+  </div>
+</section>
+
+<section class="block" id="work">
+  <div class="secname rv">Experience</div>
+  <div id="r-experience" class="rv"></div>
+</section>
+
+<section class="block" id="skills">
+  <div class="secname rv">Skills</div>
+  <div class="skillgrid rv" id="r-skills"></div>
+</section>
+
+<section class="block" id="certs">
+  <div class="secname rv">Certifications</div>
+  <ul class="certlist rv" id="r-certs"></ul>
+</section>
+
+<section class="block" id="education">
+  <div class="secname rv">Education</div>
+  <div id="r-education" class="rv"></div>
+</section>
+
+<footer id="contact">
+  <h2 class="rv">Open to AI engineering roles</h2>
+  <div class="links rv" id="r-links"></div>
+  <p class="fine" id="r-fine"></p>
+</footer>
+
+</div>
+
+<script src="assets/site.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+  $("r-summary").innerHTML = RESUME.summary;
+
+  $("r-experience").innerHTML = RESUME.experience.map(function(r){
+    return '<div class="role"><div class="role-meta">'+
+      '<div class="org">'+esc(r.org)+'</div><div class="when">'+esc(r.when)+'</div><div class="where">'+esc(r.where)+'</div></div>'+
+      '<div class="role-body"><h3>'+esc(r.role)+'</h3><ul>'+
+      r.bullets.map(function(b){return '<li>'+esc(b)+'</li>'}).join("")+'</ul></div></div>';
+  }).join("");
+
+  $("r-skills").innerHTML = RESUME.skills.map(function(s){
+    return '<div class="skillgroup"><h4>'+esc(s.group)+'</h4><p>'+esc(s.items)+'</p></div>';
+  }).join("");
+
+  $("r-certs").innerHTML = RESUME.certifications.map(function(c){
+    return '<li><span>'+esc(c.name)+'</span><span class="issuer">'+esc(c.issuer)+'</span></li>';
+  }).join("");
+
+  $("r-education").innerHTML = RESUME.education.map(function(e){
+    return '<div class="role"><div class="role-meta">'+
+      '<div class="org">'+esc(e.school)+'</div><div class="when">'+esc(e.when)+'</div><div class="where">'+esc(e.note)+'</div></div>'+
+      '<div class="role-body"><h3>'+esc(e.degree)+'</h3></div></div>';
+  }).join("");
+});
+</script>
+</body>
+</html>

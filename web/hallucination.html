@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM Hallucination Tester — Aayera Ahmad</title>
+<meta name="description" content="Generates factual questions, answers them, then grades each answer against retrieved reference passages. Run it live.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400;12..96,75..100,600;12..96,75..100,800&family=Newsreader:opsz,wght@6..72,300;6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>document.documentElement.className="js"</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="masthead on-dark">
+  <div class="inner">
+    <a class="wordmark" href="index.html">Aayera Ahmad</a>
+    <nav><a href="index.html#projects">All projects</a><a href="index.html#contact">Contact</a></nav>
+  </div>
+</header>
+
+<section class="phero">
+  <div class="wrap">
+    <a class="back" href="index.html#projects">← Projects</a>
+    <div class="num">Project 03</div>
+    <h1>LLM Hallucination Tester</h1>
+    <p class="sub">Generates factual questions, answers them, then grades each answer against a retrieved source — and shows you the passage the verdict rested on.</p>
+    <div class="meta">
+      <div>Stack<b>FastAPI · LangChain · async</b></div>
+      <div>Pipeline<b>3 stages · 2N+1 calls</b></div>
+      <div>Grading<b>Retrieved passages</b></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+
+<section class="block" style="border-top:none">
+  <div class="secname rv">The problem</div>
+  <p class="statement rv">I built this because I was tired of models stating nonsense with total confidence. If you're shipping a RAG pipeline you want a number — how often does this model just make things up? — and you want it before it reaches users, not after.</p>
+  <p class="statement rv" style="margin-top:22px;color:var(--ink-soft)">The first version had a flaw I'd have been asked about in any interview: it graded one model's answers using <em>another model's memory</em>. That's not measurement, it's two guesses stacked. So stage three now checks each answer against <strong>retrieved reference passages</strong>, and returns the passage alongside the verdict. The grader can be audited.</p>
+</section>
+
+<section class="block">
+  <div class="secname rv">How it works</div>
+  <div class="pipe rv">
+    <div class="stage"><div class="n">01</div><h4>Generate</h4><p>One call produces N factual, verifiable questions about the chosen topic.</p></div>
+    <div class="stage"><div class="n">02</div><h4>Answer</h4><p>The model answers each question. Concurrency is capped at two so the rate limit holds.</p></div>
+    <div class="stage key"><div class="n">03</div><h4>Grade</h4><p>Each answer is checked against passages retrieved from the reference corpus — not model memory.</p></div>
+    <div class="stage"><div class="n">04</div><h4>Report</h4><p>A hallucination rate, plus per-question verdict, reasoning, and the supporting passage.</p></div>
+  </div>
+  <p class="lede rv" style="margin-top:26px">Topics are limited to the indexed corpus by design. A free-text box would silently fall back to ungrounded judgement, which is exactly the failure this tool exists to catch.</p>
+</section>
+
+<section class="block" id="try">
+  <div class="secname rv">Try it</div>
+  <h2 class="big rv">Pick a topic and watch it catch an invention.</h2>
+  <p class="lede rv" style="margin-top:18px">Three stages run per test, so this one takes a few seconds longer than the others.</p>
+
+  <div class="console rv">
+    <div class="console-bar"><span>POST /api/hallucination</span><span class="status"><span class="dot" id="dot-hall"></span><span id="mode-hall">sample mode</span></span></div>
+    <div class="console-body">
+      <p class="privacy">Topics are limited to the indexed reference corpus, so every verdict can be checked against a real source rather than another model's memory.</p>
+      <div class="row" style="margin-top:0">
+        <div>
+          <label class="fieldlabel" for="in-hall">Topic</label>
+          <select id="in-hall">
+            <option>Discovery of Radium</option>
+            <option>The Apollo 11 mission</option>
+            <option>The EU AI Act</option>
+            <option>Photosynthesis</option>
+            <option>The Indian Space Research Organisation</option>
+          </select>
+        </div>
+        <div style="max-width:150px">
+          <label class="fieldlabel" for="n-hall">Questions</label>
+          <input type="number" id="n-hall" value="3" min="1" max="3">
+        </div>
+      </div>
+      <div class="actions">
+        <button onclick="runHall(this)">Run test</button>
+        <button class="ghost" onclick="resetHall()">Reset</button>
+      </div>
+      <div class="out" id="out-hall"></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="secname rv">Under the hood</div>
+  <pre class="code rv"><span class="k">POST</span> /api/hallucination
+{ "topic": "Discovery of Radium", "num_questions": 3 }
+
+<span class="k">200</span>
+{
+  "topic": "Discovery of Radium",
+  "questions_tested": 3,
+  "hallucination_rate": 0.33,
+  "results": [
+    { "question": "...", "answer": "...",
+      "verdict": "HALLUCINATED",
+      "confidence": 0.9,
+      "reasoning": "...",
+      "source": "&lt;the passage it was graded against&gt;" }
+  ]
+}</pre>
+  <p class="lede rv" style="margin-top:24px">Cost is <code style="font-family:var(--mono);font-size:.85em">2N+1</code> model calls — one to generate, N to answer, N to grade. At three questions that's seven, which is why <code style="font-family:var(--mono);font-size:.85em">num_questions</code> is clamped server-side regardless of what the client sends.</p>
+  <p class="rv" style="margin-top:24px"><a href="https://github.com/aayeraahmad531/llm-hallucination-tester" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--ink);padding-bottom:3px;text-decoration:none">Source on GitHub →</a></p>
+</section>
+
+<section class="block">
+  <div class="secname rv">How these demos handle your data</div>
+  <dl class="datapanel rv">
+    <dt>What is sent</dt><dd>Only the text you type into a demo box, capped at 2,000 characters. Nothing else about you or your browser.</dd>
+    <dt>Where it goes</dt><dd>A container on Google Cloud Run that wakes on request and sleeps after, which calls the Google Gemini API. Free-tier prompts may be used by Google to improve their models.</dd>
+    <dt>What is retained</dt><dd>Nothing. Request bodies are never logged — only timestamp, path and status code.</dd>
+    <dt>Limits</dt><dd>Five runs per hour per visitor, and outbound model calls are capped at two concurrently. When a limit is reached you'll see a cached sample result rather than an error.</dd>
+    <dt>Uploads</dt><dd>Not accepted. File parsing exists in the repositories but is deliberately left out of the public demos.</dd>
+  </dl>
+</section>
+
+<div class="nextup">
+  <a href="bias.html">
+    <div>
+      <div class="lbl">Back to the start</div>
+      <h3>AI Hiring Bias Detector</h3>
+    </div>
+    <div class="lbl">01 →</div>
+  </a>
+</div>
+
+<footer>
+  <h2>Open to AI engineering roles</h2>
+  <div class="links" id="r-links"></div>
+  <p class="fine" id="r-fine"></p>
+</footer>
+
+</div>
+
+<script src="assets/site.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",function(){markLive("hall");warmOn("try")});
+</script>
+</body>
+</html>

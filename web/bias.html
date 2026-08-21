@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Hiring Bias Detector — Aayera Ahmad</title>
+<meta name="description" content="Reads a job posting and underlines the language that screens people out, with a replacement for each flag. Run it on your own posting.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400;12..96,75..100,600;12..96,75..100,800&family=Newsreader:opsz,wght@6..72,300;6..72,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>document.documentElement.className="js"</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header class="masthead on-dark">
+  <div class="inner">
+    <a class="wordmark" href="index.html">Aayera Ahmad</a>
+    <nav><a href="index.html#projects">All projects</a><a href="index.html#contact">Contact</a></nav>
+  </div>
+</header>
+
+<section class="phero">
+  <div class="wrap">
+    <a class="back" href="index.html#projects">← Projects</a>
+    <div class="num">Project 01</div>
+    <h1>AI Hiring Bias Detector</h1>
+    <p class="sub">Reads a job posting and underlines the language that quietly screens people out — with a concrete replacement for every flag.</p>
+    <div class="meta">
+      <div>Stack<b>FastAPI · LangChain · Gemini</b></div>
+      <div>Grounding<b>Curated bias lexicon</b></div>
+      <div>Deploy<b>Docker · Cloud Run</b></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+
+<section class="block" style="border-top:none">
+  <div class="secname rv">The problem</div>
+  <p class="statement rv">I reviewed a stack of engineering job descriptions at work and found them loaded with gendered phrasing and age assumptions — "rockstar ninja," "digital native," fifteen years of experience with a three-year-old framework. Nobody writes that on purpose. They copy a template, and qualified people quietly don't apply.</p>
+  <p class="statement rv" style="margin-top:22px;color:var(--ink-soft)">The hard part isn't detection, it's <strong>consistency</strong>. Ask a model to find bias freehand and it flags different things every run, at different confidence. So the flags here are matched against a curated lexicon with research-backed replacements — the model's job is locating and explaining, not deciding what counts.</p>
+</section>
+
+<section class="block">
+  <div class="secname rv">How it works</div>
+  <div class="pipe rv">
+    <div class="stage"><div class="n">01</div><h4>Scan</h4><p>The posting is matched against an indexed lexicon of terms with category, severity and a suggested replacement.</p></div>
+    <div class="stage key"><div class="n">02</div><h4>Retrieve</h4><p>Matching entries are pulled by vector similarity, so near-misses and variants are caught, not just exact strings.</p></div>
+    <div class="stage"><div class="n">03</div><h4>Locate</h4><p>The model quotes each offending span verbatim so the frontend can underline it in the original text.</p></div>
+    <div class="stage"><div class="n">04</div><h4>Score</h4><p>Per-category confidence and an overall bias score, with the replacement drawn from the retrieved entry.</p></div>
+  </div>
+</section>
+
+<section class="block" id="try">
+  <div class="secname rv">Try it</div>
+  <h2 class="big rv">Paste a posting you actually wrote.</h2>
+  <p class="lede rv" style="margin-top:18px">The sample below is deliberately awful. Replace it with a real req and see what comes back.</p>
+
+  <div class="console rv">
+    <div class="console-bar"><span>POST /api/bias</span><span class="status"><span class="dot" id="dot-bias"></span><span id="mode-bias">sample mode</span></span></div>
+    <div class="console-body">
+      <p class="privacy">Your text is sent to Google Gemini and may be used to improve their models. Nothing is logged or stored here. Don't paste confidential or personal data.</p>
+      <label class="fieldlabel" for="in-bias">Job posting</label>
+      <textarea id="in-bias" maxlength="2000" oninput="count('bias')">We are looking for a young, energetic salesman with 10+ years experience. He should be a cultural fit for our Western team and a real rockstar who can crush targets.</textarea>
+      <div class="actions">
+        <button onclick="runBias(this)">Run audit</button>
+        <button class="ghost" onclick="resetBias()">Reset</button>
+        <span class="count" id="c-bias"></span>
+      </div>
+      <div class="out" id="out-bias"></div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
+  <div class="secname rv">Under the hood</div>
+  <pre class="code rv"><span class="k">POST</span> /api/bias
+{
+  "job_description": "...",
+  "analysis_type": ["gender", "age", "cultural"]
+}
+
+<span class="k">200</span>
+{
+  "overall_bias_score": 0.92,
+  "spans": [ { "text": "...", "category": "gender" } ],
+  "categories": [
+    { "bias_type": "gender", "detected": true, "confidence": 0.85,
+      "examples": [...], "suggestion": "..." }
+  ],
+  "summary": "..."
+}</pre>
+  <p class="lede rv" style="margin-top:24px">Every span is quoted verbatim from your input — that's what lets the underlines land on the exact words rather than approximate positions. Responses are validated against a Pydantic schema before they leave the service, so a malformed model output becomes a retry, never a broken page.</p>
+  <p class="rv" style="margin-top:24px"><a class="go" href="https://github.com/aayeraahmad531/AI-Hiring-Bias-Detector" target="_blank" rel="noopener" style="font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--ink);padding-bottom:3px;text-decoration:none">Source on GitHub →</a></p>
+</section>
+
+<div class="nextup">
+  <a href="compliance.html">
+    <div>
+      <div class="lbl">Next project</div>
+      <h3>EU AI Act Compliance Checker</h3>
+    </div>
+    <div class="lbl">02 →</div>
+  </a>
+</div>
+
+<footer>
+  <h2>Open to AI engineering roles</h2>
+  <div class="links" id="r-links"></div>
+  <p class="fine" id="r-fine"></p>
+</footer>
+
+</div>
+
+<script src="assets/site.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",function(){markLive("bias");count("bias");warmOn("try")});
+</script>
+</body>
+</html>
