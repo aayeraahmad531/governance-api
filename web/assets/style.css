@@ -149,6 +149,11 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .redline mark[data-sev=gender]{color:var(--high)}
 .redline mark[data-sev=age]{color:var(--med)}
 .redline mark[data-sev=cultural]{color:var(--violet)}
+.obs{margin-bottom:22px;padding:14px 18px;background:var(--paper);border:1px solid var(--rule)}
+.obs b{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:400;display:block;margin-bottom:9px;color:var(--ink-soft)}
+.obs ul{list-style:none}
+.obs li{position:relative;padding-left:16px;font-size:.9rem;font-weight:300;color:var(--ink-soft);line-height:1.7}
+.obs li::before{content:"";position:absolute;left:0;top:.75em;width:7px;height:1px;background:var(--ink-soft)}
 .finding{padding:16px 0;border-bottom:1px solid var(--rule)}
 .finding:last-child{border-bottom:none}
 .finding-top{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:8px}

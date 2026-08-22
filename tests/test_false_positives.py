@@ -93,7 +93,11 @@ def test_false_positive_low_bias_score(title: str, posting_text: str):
     # ASSERTION 1: overall_bias_score must be 0.0 for clean postings
     assert score == 0.0, f"False Positive! Clean posting '{title}' scored {score} > 0.0!"
 
-    # ASSERTION 2: All bias categories must have detected == False for clean postings
+    detected_spans = data.get("spans", [])
+    # ASSERTION 2: spans must contain ZERO entries for clean postings (neutral terms must NOT be in spans)
+    assert len(detected_spans) == 0, f"False Positive! Clean posting '{title}' returned non-empty spans: {detected_spans}!"
+
+    # ASSERTION 3: All bias categories must have detected == False for clean postings
     for cat in categories:
         assert cat.get("detected") is False, f"False Positive! Category '{cat['bias_type']}' flagged detected=True in clean posting '{title}'!"
 

@@ -156,6 +156,11 @@ async function runBias(btn){
   const d=res.data;
   let h=banner(res)+'<div class="verdict"><span class="big">'+Math.round(d.overall_bias_score*100)+'%</span><span class="cap">bias score · '+d.categories.filter(c=>c.detected).length+' categories flagged</span></div>';
   h+='<div class="redline">'+redline(text,d.spans)+'</div>';
+  if(d.observations&&d.observations.length){
+    h+='<div class="obs"><b>Noted, not flagged</b><ul>'+
+       d.observations.map(function(o){return '<li>'+esc(o)+'</li>'}).join("")+
+       '</ul></div>';
+  }
   d.categories.forEach(c=>{
     h+='<div class="finding"><div class="finding-top">'+
        '<span class="sev '+(c.detected?(c.confidence>.9?"high":"med"):"clear")+'">'+(c.detected?"flagged":"clear")+'</span>'+

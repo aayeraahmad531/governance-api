@@ -128,7 +128,6 @@ Job Description:
 
     for span in llm_res.spans:
         if span.text in body.job_description:
-            valid_spans.append(span)
             span_clean = span.text.strip().lower()
             meta = retrieved_lexicon_map.get(span_clean, {})
             sev = meta.get("severity", "").lower()
@@ -146,6 +145,8 @@ Job Description:
                 observations.append(
                     f"Standard requirement term '{span.text}' noted under observations without score impact."
                 )
+            else:
+                valid_spans.append(span)
         else:
             dropped_count += 1
             logger.warning(f"Dropping non-verbatim bias span: '{span.text}' (not found in input text)")
@@ -153,28 +154,16 @@ Job Description:
     if dropped_count > 0:
         increment_dropped_bias_spans(dropped_count)
 
-    # Post-process categories: If all matching spans for a category are severity "inclusive" or "neutral", set detected = False
+    # Post-process categories: If no active scoring spans match a category, set detected = False and clear examples
     for cat in llm_res.categories:
         cat_spans = [s for s in valid_spans if s.category.lower() == cat.bias_type.lower()]
-        non_info_spans = []
-        for s in cat_spans:
-            s_clean = s.text.strip().lower()
-            sev = retrieved_lexicon_map.get(s_clean, {}).get("severity", "").lower()
-            if not sev:
-                if any(kw in s_clean for kw in INCLUSIVE_KEYWORDS):
-                    sev = "inclusive"
-                elif any(kw in s_clean for kw in NEUTRAL_KEYWORDS):
-                    sev = "neutral"
-            if sev not in ["info", "inclusive", "neutral"]:
-                non_info_spans.append(s)
-
-        if cat_spans and not non_info_spans:
+        if not cat_spans:
             cat.detected = False
             cat.confidence = 0.0
-            cat.suggestion = "Inclusive/standard phrasing detected; noted under observations without score defect."
-        elif not cat_spans:
-            cat.detected = False
-            cat.confidence = 0.0
+            cat.examples = []
+            cat.suggestion = ""
+        else:
+            cat.examples = list(dict.fromkeys([s.text for s in cat_spans]))
 
     llm_res.spans = valid_spans
     llm_res.observations = list(dict.fromkeys(observations))  # Deduplicate observations
