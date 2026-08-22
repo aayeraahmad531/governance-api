@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=BaseModel)
 
+ACTIVE_MODEL_NAME = "gemini-3.5-flash-lite"
+
 
 class UpstreamUnavailable(Exception):
     """Raised when primary and fallback LLM providers return 429/5xx, missing key, or network errors."""
@@ -26,8 +28,9 @@ def get_llm(provider: str):
         if not settings.GEMINI_API_KEY:
             raise UpstreamUnavailable("GEMINI_API_KEY is not set in environment or .env file.")
         from langchain_google_genai import ChatGoogleGenerativeAI
+        # Gemini 3.x removes deprecated temperature/top_p parameters
         return ChatGoogleGenerativeAI(
-            model="gemini-3.5-flash-lite",
+            model=ACTIVE_MODEL_NAME,
             google_api_key=settings.GEMINI_API_KEY,
             max_output_tokens=1000
         )
@@ -38,7 +41,6 @@ def get_llm(provider: str):
         return ChatOpenAI(
             model="gpt-4o-mini",
             api_key=settings.OPENAI_API_KEY,
-            temperature=0,
             max_tokens=1000
         )
     elif provider_name == "groq":
@@ -48,7 +50,6 @@ def get_llm(provider: str):
         return ChatGroq(
             model="llama-3.1-8b-instant",
             groq_api_key=settings.GROQ_API_KEY,
-            temperature=0,
             max_tokens=1000
         )
     else:
@@ -58,6 +59,7 @@ def get_llm(provider: str):
 async def _call_llm_with_provider(provider: str, system: str, user: str, schema: Type[T]) -> T:
     async with llm_semaphore:
         increment_total_llm_calls()
+        logger.info(f"Invoking LLM provider '{provider}' using model '{ACTIVE_MODEL_NAME}'")
         llm = get_llm(provider)
         structured_llm = llm.with_structured_output(schema)
         messages = [SystemMessage(content=system), HumanMessage(content=user)]

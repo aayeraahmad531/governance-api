@@ -93,8 +93,7 @@ def test_false_positive_low_bias_score(title: str, posting_text: str):
     # ASSERTION 1: overall_bias_score must be strictly less than 0.25
     assert score < 0.25, f"False Positive! '{title}' scored {score} >= 0.25 threshold!"
 
-    # ASSERTION 2: No category must have detected=True with confidence > 0.5 for non-info severe terms
+    # ASSERTION 2: All bias categories must be detected == False for clean postings
     for cat in categories:
-        if cat.get("detected"):
-            conf = cat.get("confidence", 0.0)
-            assert conf <= 0.5, f"False Positive! Category '{cat['bias_type']}' detected with high confidence {conf} > 0.5 in '{title}'!"
+        assert cat.get("detected") is False, f"False Positive! Category '{cat['bias_type']}' flagged detected=True in clean posting '{title}'!"
+

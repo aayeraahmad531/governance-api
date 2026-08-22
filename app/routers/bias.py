@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request
 from app.guards import limiter, validate_text_length, response_cache, increment_dropped_bias_spans
 from app.schemas import BiasRequest, BiasResponse, BiasSpan, CategoryFinding
 from app.retrieval import search
-from app.llm import complete
+from app.llm import complete, ACTIVE_MODEL_NAME
 
 logger = logging.getLogger("governance_api.routers.bias")
 router = APIRouter(prefix="/api", tags=["bias"])
@@ -55,7 +55,7 @@ async def audit_bias(request: Request, body: BiasRequest) -> BiasResponse:
     }
     cached_res = response_cache.get(cache_payload)
     if cached_res is not None:
-        logger.info("Cache hit for /api/bias request.")
+        logger.info(f"Cache hit for /api/bias request. Served by model '{ACTIVE_MODEL_NAME}'.")
         return BiasResponse(**cached_res)
 
     lexicon_hits = search("bias_lexicon", body.job_description, k=5)
@@ -83,9 +83,17 @@ Job Description:
 
     valid_spans: List[BiasSpan] = []
     dropped_count = 0
+    observations: List[str] = []
+
     for span in llm_res.spans:
         if span.text in body.job_description:
             valid_spans.append(span)
+            span_clean = span.text.strip().lower()
+            meta = retrieved_lexicon_map.get(span_clean, {})
+            if meta.get("severity", "").lower() == "info":
+                observations.append(
+                    f"Feminine-coded term '{span.text}' noted under observations. Note: Inclusive phrasing is not a defect and does not affect the risk score."
+                )
         else:
             dropped_count += 1
             logger.warning(f"Dropping non-verbatim bias span: '{span.text}' (not found in input text)")
@@ -93,9 +101,27 @@ Job Description:
     if dropped_count > 0:
         increment_dropped_bias_spans(dropped_count)
 
+    # Post-process categories: If all matching spans for a category are severity "info", set detected = False
+    for cat in llm_res.categories:
+        cat_spans = [s for s in valid_spans if s.category.lower() == cat.bias_type.lower()]
+        non_info_spans = [
+            s for s in cat_spans
+            if retrieved_lexicon_map.get(s.text.strip().lower(), {}).get("severity", "").lower() != "info"
+        ]
+
+        if cat_spans and not non_info_spans:
+            cat.detected = False
+            cat.confidence = 0.0
+            cat.suggestion = "Inclusive phrasing detected; noted under observations without score defect."
+        elif not cat_spans:
+            cat.detected = False
+            cat.confidence = 0.0
+
     llm_res.spans = valid_spans
+    llm_res.observations = list(dict.fromkeys(observations))  # Deduplicate observations
     llm_res.overall_bias_score = compute_deterministic_bias_score(valid_spans, retrieved_lexicon_map)
 
+    logger.info(f"/api/bias successfully audited request using serving model '{ACTIVE_MODEL_NAME}'.")
     response_cache.set(cache_payload, llm_res.model_dump())
 
     return llm_res

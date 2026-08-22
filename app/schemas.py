@@ -29,6 +29,8 @@ class BiasResponse(BaseModel):
     spans: List[BiasSpan]
     categories: List[CategoryFinding]
     summary: str
+    observations: List[str] = Field(default_factory=list, description="Inclusive/neutral phrasing observations.")
+
 
 
 # --- Compliance Schemas ---
