@@ -27,9 +27,9 @@ def get_llm(provider: str):
             raise UpstreamUnavailable("GEMINI_API_KEY is not set in environment or .env file.")
         from langchain_google_genai import ChatGoogleGenerativeAI
         return ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash-lite",
+            model="gemini-3.5-flash-lite",
             google_api_key=settings.GEMINI_API_KEY,
-            temperature=0
+            max_output_tokens=1000
         )
     elif provider_name == "openai":
         if not settings.OPENAI_API_KEY:
@@ -38,7 +38,8 @@ def get_llm(provider: str):
         return ChatOpenAI(
             model="gpt-4o-mini",
             api_key=settings.OPENAI_API_KEY,
-            temperature=0
+            temperature=0,
+            max_tokens=1000
         )
     elif provider_name == "groq":
         if not settings.GROQ_API_KEY:
@@ -47,14 +48,14 @@ def get_llm(provider: str):
         return ChatGroq(
             model="llama-3.1-8b-instant",
             groq_api_key=settings.GROQ_API_KEY,
-            temperature=0
+            temperature=0,
+            max_tokens=1000
         )
     else:
         raise ValueError(f"Unsupported LLM provider: {provider}")
 
 
 async def _call_llm_with_provider(provider: str, system: str, user: str, schema: Type[T]) -> T:
-    # Acquire global semaphore (max 2 concurrent outbound LLM calls)
     async with llm_semaphore:
         increment_total_llm_calls()
         llm = get_llm(provider)
@@ -86,7 +87,7 @@ async def complete(system: str, user: str, schema: Type[T]) -> T:
                 raise
             except (ValidationError, Exception) as err:
                 err_str = str(err).lower()
-                is_api_err = any(code in err_str for code in ["429", "500", "502", "503", "504", "rate limit", "quota", "connection", "api_key"])
+                is_api_err = any(code in err_str for code in ["429", "500", "502", "503", "504", "rate limit", "quota", "connection", "api_key", "404", "not found"])
                 
                 if is_api_err and fallback_provider:
                     try:
