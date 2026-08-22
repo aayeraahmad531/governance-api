@@ -73,8 +73,7 @@ def test_false_positive_low_bias_score(title: str, posting_text: str):
         pytest.skip("GEMINI_API_KEY is not set. Populate GEMINI_API_KEY in .env to run live false-positive tests.")
 
     body = {
-        "job_description": posting_text,
-        "analysis_type": ["gender", "age", "cultural"]
+        "job_description": posting_text
     }
     
     response = client.post("/api/bias", json=body)
