@@ -1,6 +1,7 @@
 import logging
 from fastapi.testclient import TestClient
 from app.main import app
+from app.config import settings
 
 
 def test_privacy_canary_zero_leakage(caplog):
@@ -27,14 +28,23 @@ def test_privacy_canary_zero_leakage(caplog):
     assert res_b.status_code == 422
     assert canary not in res_b.text
 
-    # (c) Unhandled 500 Error
-    res_c = client.post(
-        "/api/debug-crash",
-        json={"job_description": canary},
-        headers={"X-Forwarded-For": "10.1.1.3"}
-    )
-    assert res_c.status_code == 500
-    assert canary not in res_c.text
+    # (c1) Production Security Check: When DEBUG=False, /api/debug-crash MUST return 404 Not Found
+    settings.DEBUG = False
+    res_c1 = client.post("/api/debug-crash", json={"job_description": canary})
+    assert res_c1.status_code == 404, f"Security Breach! /api/debug-crash returned {res_c1.status_code} instead of 404 when DEBUG=False!"
+
+    # (c2) Unhandled 500 Error Traceback Privacy Test (enabled with DEBUG=True)
+    settings.DEBUG = True
+    try:
+        res_c2 = client.post(
+            "/api/debug-crash",
+            json={"job_description": canary},
+            headers={"X-Forwarded-For": "10.1.1.3"}
+        )
+        assert res_c2.status_code == 500
+        assert canary not in res_c2.text
+    finally:
+        settings.DEBUG = False
 
     # Grep ALL captured logs for CANARY_STRING_XYZ
     log_output = caplog.text

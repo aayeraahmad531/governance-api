@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     LLM_PROVIDER: str = "gemini"
     FALLBACK_PROVIDER: Optional[str] = None
+    DEBUG: bool = False
 
     GEMINI_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None

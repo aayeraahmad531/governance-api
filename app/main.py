@@ -100,7 +100,9 @@ async def health_check():
 
 @app.post("/api/debug-crash")
 async def debug_crash(request: Request):
-    """Debug route for privacy canary 500 test."""
+    """Debug route for privacy canary 500 test (active only when DEBUG=True)."""
+    if not settings.DEBUG:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
     raise RuntimeError("Simulated crash for privacy canary test")
 
 
