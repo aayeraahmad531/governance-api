@@ -1,84 +1,99 @@
 # Deployment & Configuration Guide
 
-This guide provides a simple step-by-step checklist for deploying the **Governance API** backend to Google Cloud Run and the **web frontend** to Vercel.
+This document contains the step-by-step pre-deployment checklist for deploying the **Governance API** backend to Google Cloud Run (`asia-south1`) and the **web frontend** to Vercel.
 
 ---
 
-## 1. Deploy the Backend to Google Cloud Run
+## 1. Secret Manager Setup (One-Time Prerequisites)
 
-Run the following `gcloud` command from the root of the repository to build and deploy the container:
+Before deploying to Cloud Run, create the `GEMINI_API_KEY` secret in Google Secret Manager and grant the default compute service account read access to it:
+
+```bash
+# 1. Create the secret from your API key string
+echo -n "<YOUR_GEMINI_API_KEY>" | gcloud secrets create GEMINI_API_KEY --data-file=-
+
+# 2. Grant the default compute service account permission to access the secret
+gcloud secrets add-iam-policy-binding GEMINI_API_KEY \
+  --member="serviceAccount:$(gcloud projects describe $(gcloud config get-value project) --format='value(projectNumber)')-compute@developer.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
+---
+
+## 2. Deploy the Backend to Google Cloud Run
+
+Run the following command from the root of the repository to build and deploy the service:
 
 ```bash
 gcloud run deploy governance-api \
   --source . \
-  --platform managed \
-  --region us-central1 \
+  --region asia-south1 \
   --allow-unauthenticated \
   --port 8080 \
-  --set-env-vars GEMINI_API_KEY="<YOUR_GEMINI_API_KEY>",LLM_PROVIDER="gemini",ALLOWED_ORIGINS="<YOUR_VERCEL_URL>",DEBUG="false"
+  --min-instances=0 \
+  --max-instances=3 \
+  --memory=1Gi \
+  --timeout=60 \
+  --set-env-vars LLM_PROVIDER=gemini,DEBUG=false,ALLOWED_ORIGINS="<YOUR_VERCEL_URL>" \
+  --set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest
 ```
 
-> [!IMPORTANT]
-> Replace `<YOUR_GEMINI_API_KEY>` with your actual API key.
-> In `--set-env-vars ALLOWED_ORIGINS="..."`, put your Vercel frontend URL (e.g., `https://your-site.vercel.app`). Do **NOT** put the Cloud Run URL here!
-
----
-
-## 2. Retrieve Your Deployed Cloud Run URL
-
-Once deployment completes, `gcloud` will print your Service URL, or you can retrieve it with:
-
-```bash
-gcloud run services describe governance-api --region us-central1 --format 'value(status.url)'
-```
-
-*Example Output*: `https://governance-api-abc123xyz-uc.a.run.app`
-
----
-
-## 3. Update Frontend & Environment Configurations (Only 2 Edits Required!)
-
-Thanks to wildcard `*.run.app` support in `web/vercel.json`, you only need to edit **TWO** places:
-
-| Location | File / Settings | Target Value | Description |
-| :--- | :--- | :--- | :--- |
-| **1. Frontend JS** | `web/assets/site.js` | `const API_BASE = "<YOUR_CLOUD_RUN_URL>";` | Tells the frontend JS where to send backend requests. |
-| **2. Cloud Run Env Var** | Cloud Run Service Env | `ALLOWED_ORIGINS="<YOUR_VERCEL_URL>"` | CORS Whitelist on Cloud Run. **(REVERSAL CALLOUT: Cloud Run takes the VERCEL URL, NOT the Cloud Run URL!)** |
+### Why Each Flag Matters
+- `--max-instances=3`: Acts as a **hard cost ceiling** preventing runaway billing spikes on a public endpoint.
+- `--set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest`: Keeps secret keys out of shell history and plain-text env vars in the Cloud Run console.
+- `--region asia-south1`: Deploys to **Mumbai**, minimizing latency for clients in India (compared to `us-central1` which adds hundreds of ms round-trip).
+- `--timeout=60`: Accommodates worst-case multi-turn retrieval/LLM latency on the `/api/hallucination` endpoint.
+- `--set-env-vars ALLOWED_ORIGINS="<YOUR_VERCEL_URL>"`: Configures CORS to whitelist only your frontend Vercel URL.
 
 > [!CAUTION]
-> **Common Pitfall**: Setting `ALLOWED_ORIGINS` to the Cloud Run URL instead of the Vercel URL will cause CORS errors on the frontend!
+> **REVERSAL CALLOUT**: `ALLOWED_ORIGINS` in Cloud Run takes your **Vercel frontend URL** (e.g., `https://your-app.vercel.app`), NOT the Cloud Run URL! Setting this to the Cloud Run URL will cause browser CORS blocks.
 
 ---
 
-## 4. Deploy the Static Frontend to Vercel
+## 3. Retrieve Your Deployed Cloud Run URL
 
-1. Install the Vercel CLI (or connect your GitHub repository in the Vercel Web Console):
-   ```bash
-   npm i -g vercel
-   ```
-2. From the root of the repository, deploy the `web/` directory:
-   ```bash
-   vercel --prod
-   ```
-3. Set the root directory in Vercel settings to `web/` if prompted.
+Once deployment completes, retrieve your Cloud Run URL:
+
+```bash
+gcloud run services describe governance-api --region asia-south1 --format 'value(status.url)'
+```
+
+*Example Output*: `https://governance-api-abc123xyz-el.a.run.app`
 
 ---
 
-## 5. Verification Checklist
+## 4. Update the THREE Required URL Locations
 
-1. Open your deployed Vercel URL in a browser (e.g., `https://your-site.vercel.app/bias.html`).
+You must paste your deployed URLs into **exactly THREE places**:
+
+| Location | File / Config | Target Value | Purpose |
+| :--- | :--- | :--- | :--- |
+| **1. Frontend JS** | `web/assets/site.js` | `const API_BASE = "<YOUR_CLOUD_RUN_URL>";` | Directs client-side AJAX calls to backend. |
+| **2. Vercel CSP Header** | `web/vercel.json` | `"connect-src 'self' http://localhost:8080 http://127.0.0.1:8080 <YOUR_CLOUD_RUN_URL>;"` | Strict CSP header allowing browser connections to Cloud Run. |
+| **3. Cloud Run Env Var** | Cloud Run Service | `ALLOWED_ORIGINS="<YOUR_VERCEL_URL>"` | CORS Whitelist on Cloud Run. |
+
+---
+
+## 5. Deploy the Static Frontend to Vercel
+
+```bash
+# 1. Install Vercel CLI (or link repository in Vercel Dashboard)
+npm i -g vercel
+
+# 2. Deploy from repo root
+vercel --prod
+```
+
+---
+
+## 6. Verification Checklist & Troubleshooting
+
+1. Open your deployed Vercel URL in a browser (e.g., `https://your-app.vercel.app/bias.html`).
 2. **Check the Status Indicator**: Look at the top-right status dot next to "API Status".
-   - 🟢 **Green**: Connected to backend successfully.
+   - 🟢 **Green**: Connected to backend (`GET /health` returned HTTP 200).
    - 🔘 **Grey**: Disconnected / Error.
-3. **Run Analysis**: Click **"Analyze Job Posting"** on `bias.html`.
-4. Verify that live detection spans appear and the response time badge updates dynamically (confirming a live API result rather than a fallback sample).
+3. **Run Analysis**: Click **"Analyze Job Posting"** on `bias.html` and confirm live result card rendering.
 
----
-
-## 6. Troubleshooting: What a Grey Dot Means
-
-A grey status dot indicates that the browser failed to reach `GET /health` on the backend.
-
-### Check these 2 things:
-1. **CORS Mismatch**: Check Cloud Run's `ALLOWED_ORIGINS` env var. It must match your Vercel URL *exactly* (including `https://` and no trailing slash, e.g. `https://your-app.vercel.app`).
-2. **API Endpoint Mismatch**: Check `web/assets/site.js`. `API_BASE` must match your Cloud Run URL *exactly* without a trailing slash (e.g. `https://governance-api-abc123xyz-uc.a.run.app`).
+### What a Grey Dot Means (Two Things to Check)
+1. **CORS Mismatch**: Verify that `ALLOWED_ORIGINS` on Cloud Run matches your exact Vercel origin (`https://your-app.vercel.app`).
+2. **API Base Mismatch**: Verify that `API_BASE` in `web/assets/site.js` and `connect-src` in `web/vercel.json` match your Cloud Run URL (`https://governance-api-abc123xyz-el.a.run.app`).

@@ -25,14 +25,15 @@ graph TD
 ## Technical Features & Performance
 
 ### 1. ONNX Retrieval Tokenization Optimization
-During retrieval benchmarking, vector dot-product calculation was confirmed sub-millisecond ($<0.05\text{ms}$), but end-to-end `search()` latency bottlenecked at **218.0ms**.
+During retrieval benchmarking, vector dot-product calculation was confirmed sub-millisecond (**[MEASURED]** $<0.05\text{ms}$), but end-to-end `search()` latency bottlenecked at **[MEASURED]** **218.0ms**.
 - **Root Cause**: The tokenizer enforced fixed 512-token padding (`_tokenizer.enable_padding(length=512)`), forcing ONNX Runtime to evaluate full $512 \times 512$ matrix multiplications across 6 transformer layers for 5-word queries.
 - **Fix**: Replaced fixed 512 padding with dynamic query length tokenization (`_tokenizer.no_padding()`).
-- **Result**: ONNX query embedding latency dropped from **218.0ms to 4.7ms** (**46.1x speedup**), reducing total warm retrieval search time to **~5.3ms**.
+- **Result**: ONNX query embedding latency dropped from **218.0ms to 4.7ms** (**[MEASURED]** **46.1x speedup**), reducing total warm retrieval search time to **[MEASURED]** **~5.3ms**.
 
-### 2. Single-Category Score Ceiling (0.40 Capping)
-The bias detection engine enforces a deliberate architectural ceiling: **single-category bias is capped at a maximum risk contribution of 0.40 / 1.00**, regardless of the volume of biased terms detected within that single category.
-- **Design Rationale**: Single-dimension jargon (e.g., `ninja`, `rockstar`, `crush`, `killer`) represents isolated style jargon within Gender. Capping single-category contribution at 0.40 guarantees that multi-category systemic exclusion (Gender + Age + Cultural) is prioritized and reaches **1.00**.
+### 2. Built Container & Asset Footprint
+- **Built Docker Image Size**: **[MEASURED]** **1.01 GB** (`docker images governance-api:local` - includes `python:3.13-slim` base, ONNX runtime, tokenizer binaries, vector indices, and Python site-packages).
+- **External Weights File (`data/model.onnx.data`)**: **[MEASURED]** **71.4 MB** (copied into container during Docker build).
+- **Cloud Run Cold Start Latency**: **[ESTIMATED]** **~15s–25s** (includes GCP container scheduling, image pull, and **[MEASURED]** **2.25s** Python/ONNX module import time).
 
 ---
 
@@ -54,9 +55,9 @@ The bias detection engine enforces a deliberate architectural ceiling: **single-
 
 | Endpoint | Warm Latency | Target | Status & Notes |
 | :--- | :---: | :---: | :--- |
-| **`POST /api/bias`** | **4.86s** | < 5.0s | **PASSED** (k=10 retrieval depth) |
-| **`POST /api/compliance`** | **6.39s** | < 5.0s | **Exceeds 5s Target** (Required for complex multi-article regulatory reasoning against EU AI Act) |
-| **`POST /api/hallucination`** | **22.87s** | < 25.0s | **PASSED** (7 calls routed through `Semaphore(2)`) |
+| **`POST /api/bias`** | **[MEASURED] 4.86s** | < 5.0s | **PASSED** (k=10 retrieval depth) |
+| **`POST /api/compliance`** | **[MEASURED] 6.39s** | < 5.0s | **Exceeds 5s Target** (Required for multi-article regulatory reasoning) |
+| **`POST /api/hallucination`** | **[MEASURED] 22.87s** | < 25.0s | **PASSED** (7 calls routed through `Semaphore(2)`) |
 
 ---
 
