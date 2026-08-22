@@ -9,6 +9,33 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from app.config import settings
 
+# Global drop counters for operational logging and test verification
+DROPPED_BIAS_SPANS_COUNT: int = 0
+DROPPED_COMPLIANCE_VIOLATIONS_COUNT: int = 0
+TOTAL_LLM_CALLS_COUNT: int = 0
+
+
+def increment_dropped_bias_spans(count: int = 1) -> None:
+    global DROPPED_BIAS_SPANS_COUNT
+    DROPPED_BIAS_SPANS_COUNT += count
+
+
+def increment_dropped_compliance_violations(count: int = 1) -> None:
+    global DROPPED_COMPLIANCE_VIOLATIONS_COUNT
+    DROPPED_COMPLIANCE_VIOLATIONS_COUNT += count
+
+
+def increment_total_llm_calls(count: int = 1) -> None:
+    global TOTAL_LLM_CALLS_COUNT
+    TOTAL_LLM_CALLS_COUNT += count
+
+
+def reset_counters() -> None:
+    global DROPPED_BIAS_SPANS_COUNT, DROPPED_COMPLIANCE_VIOLATIONS_COUNT, TOTAL_LLM_CALLS_COUNT
+    DROPPED_BIAS_SPANS_COUNT = 0
+    DROPPED_COMPLIANCE_VIOLATIONS_COUNT = 0
+    TOTAL_LLM_CALLS_COUNT = 0
+
 
 def get_client_ip(request: Request) -> str:
     """Extracts client IP from X-Forwarded-For header or remote address."""
