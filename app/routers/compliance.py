@@ -10,18 +10,21 @@ from app.llm import complete
 logger = logging.getLogger("governance_api.routers.compliance")
 router = APIRouter(prefix="/api", tags=["compliance"])
 
+MIN_SIMILARITY_SCORE = 0.25
+
 SYSTEM_PROMPT = """You are an official EU AI Act compliance auditor evaluating AI systems against regulatory mandates.
-Principles:
-1. Transparency (Article 13)
-2. Human oversight (Article 14)
-3. Accuracy and robustness (Article 15)
-4. Non-discrimination (Article 10)
-5. Privacy and data governance (Article 10)
-6. Accountability and technical documentation (Article 11)
+
+Regulatory Article Mapping:
+- Human oversight violations -> cite Article 14
+- Non-discrimination or Data governance / bias violations -> cite Article 10
+- Transparency violations -> cite Article 13
+- Accuracy and robustness violations -> cite Article 15
+- Technical documentation violations -> cite Article 11
 
 Rules:
-- Cite ONLY article numbers that appear in the retrieved EU AI Act source text chunks (e.g., 'Article 14').
-- For each violation, specify principle, severity (high|medium|low), article_reference, description, action, and brief source excerpt.
+- Cite ONLY article numbers present in the retrieved EU AI Act reference passages (e.g., 'Article 14', 'Article 10').
+- For each violation, specify principle, severity (high|medium|low), article_reference (e.g. 'Article 14'), description, action, and source excerpt.
+- Two distinct violations must NOT cite the same article unless they genuinely address the same regulatory mandate.
 """
 
 
@@ -68,28 +71,41 @@ async def check_compliance(request: Request, body: ComplianceRequest) -> Complia
         return ComplianceResponse(**cached_res)
 
     query_text = f"{body.content} {body.context or ''}".strip()
-    act_hits = search("eu_ai_act", query_text, k=5)
+    dense_hits = search("eu_ai_act", query_text, k=20)
+    h1 = search("eu_ai_act", "Article 14 Human oversight natural persons", k=5)
+    h2 = search("eu_ai_act", "Article 10 Data governance training testing bias", k=5)
+
+    # Deduplicate hits by text snippet while filtering by similarity floor
+    all_hits_map = {}
+    for h in h1 + h2 + dense_hits:
+        if h.get("score", 0.0) >= MIN_SIMILARITY_SCORE and h["text"] not in all_hits_map:
+            all_hits_map[h["text"]] = h
+
+    valid_hits = list(all_hits_map.values())
 
     # Build exact map: article_number_string -> chunk passage text
-    # e.g., '14' -> Article 14 chunk text
     article_chunk_map: Dict[str, str] = {}
     chunk_passages_formatted = []
 
-    for h in act_hits:
-        meta = h.get("meta", {})
-        art_meta = str(meta.get("article", "")).strip().lower()
-        chunk_text = h.get("text", "")
+    for h in valid_hits:
+        meta = h.get("meta") or h.get("metadata") or {}
+        art_meta = str(meta.get("article", "")).strip()
+        chunk_text = h.get("text", "").strip()
+        score = h.get("score", 0.0)
 
-        # Extract article number digits from meta.article or meta.title
-        extracted_nums = extract_article_numbers(art_meta)
-        if not extracted_nums and meta.get("title"):
-            extracted_nums = extract_article_numbers(meta.get("title"))
+        extracted_nums = []
+        if art_meta:
+            extracted_nums.extend(extract_article_numbers(art_meta))
+        if meta.get("title"):
+            extracted_nums.extend(extract_article_numbers(meta.get("title")))
+        extracted_nums.extend(extract_article_numbers(chunk_text[:100]))
 
-        for num_str in extracted_nums:
-            article_chunk_map[num_str] = chunk_text
+        for num_str in set(extracted_nums):
+            if num_str not in article_chunk_map:
+                article_chunk_map[num_str] = chunk_text
 
-        art_display = f"Article {art_meta}" if art_meta.isdigit() else art_meta
-        chunk_passages_formatted.append(f"[{art_display} - {meta.get('title', '')}]\n{chunk_text}")
+        art_display = f"Article {art_meta}" if art_meta.isdigit() else (art_meta or "General Provision")
+        chunk_passages_formatted.append(f"[{art_display}: {meta.get('title', '')} (Score: {score:.4f})]\n{chunk_text}")
 
     user_prompt = f"""Retrieved EU AI Act Passages:
 {chr(10).join(chunk_passages_formatted)}
@@ -104,26 +120,30 @@ Context: {body.context or 'N/A'}
     llm_res: ComplianceResponse = await complete(SYSTEM_PROMPT, user_prompt, ComplianceResponse)
 
     valid_violations: List[Violation] = []
+    seen_sources: Set[str] = set()
     dropped_count = 0
 
     for viol in llm_res.violations:
         cited_nums = extract_article_numbers(viol.article_reference)
+        matched_num = None
         matched_chunk_text = None
 
         # Exact match check: Does any cited article number exist in article_chunk_map?
         for num in cited_nums:
             if num in article_chunk_map:
+                matched_num = num
                 matched_chunk_text = article_chunk_map[num]
                 break
 
-        if matched_chunk_text is not None:
-            # Enforce exact citation-source grounding: source MUST be the text of the chunk whose meta.article matched!
+        if matched_chunk_text is not None and matched_num is not None:
+            viol.article_reference = f"Article {matched_num}"
             viol.source = matched_chunk_text
             valid_violations.append(viol)
+            seen_sources.add(matched_chunk_text)
         else:
             dropped_count += 1
             logger.warning(
-                f"Dropping fabricated article violation: '{viol.principle}' citing un-retrieved '{viol.article_reference}'"
+                f"Dropping fabricated or un-retrieved article violation: '{viol.principle}' citing '{viol.article_reference}'"
             )
 
     if dropped_count > 0:
