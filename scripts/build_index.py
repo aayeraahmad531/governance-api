@@ -133,8 +133,8 @@ def parse_eu_ai_act_html(html_path: str) -> tuple[List[str], List[Dict[str, Any]
 def get_refined_bias_lexicon() -> tuple[List[str], List[Dict[str, Any]]]:
     """
     Generates realistic job posting bias entries.
-    Feminine-coded entries have severity 'info' and do NOT count toward overall_bias_score.
-    Pruned gendered titles to high-occurrence real job ad terms.
+    Feminine-coded entries and standard professional qualifiers have severity 'info'
+    and do NOT count toward overall_bias_score.
     """
     entries = [
         # Masculine-coded (High/Medium/Low severity)
@@ -154,7 +154,7 @@ def get_refined_bias_lexicon() -> tuple[List[str], List[Dict[str, Any]]]:
         {"term": "hacker", "category": "gender", "severity": "medium", "replacement": "creative developer", "context": "growth hacker wanted for fast-moving team."},
         {"term": "ruthless", "category": "gender", "severity": "high", "replacement": "decisive", "context": "ruthless prioritization of customer needs."},
 
-        # Feminine-coded (Severity: 'info' — observation only, excluded from score calculation)
+        # Feminine-coded & Professional Phrasing Variants (Severity: 'info' — observation only, excluded from score calculation)
         {"term": "nurturing", "category": "gender", "severity": "info", "replacement": "supportive leadership", "context": "nurturing team environment encouraging growth."},
         {"term": "supportive", "category": "gender", "severity": "info", "replacement": "collaborative", "context": "seeking a supportive colleague for client relations."},
         {"term": "collaborative", "category": "gender", "severity": "info", "replacement": "cross-functional alignment", "context": "collaborative mindset across engineering units."},
@@ -167,6 +167,11 @@ def get_refined_bias_lexicon() -> tuple[List[str], List[Dict[str, Any]]]:
         {"term": "relationship-builder", "category": "gender", "severity": "info", "replacement": "account manager", "context": "strong relationship-builder with enterprise buyers."},
         {"term": "compassionate", "category": "gender", "severity": "info", "replacement": "considerate", "context": "compassionate leader in healthcare administration."},
         {"term": "team player", "category": "gender", "severity": "info", "replacement": "collaborator", "context": "essential team player in product design."},
+        {"term": "team-oriented", "category": "gender", "severity": "info", "replacement": "collaborative", "context": "team-oriented work environment."},
+        {"term": "fast-paced", "category": "age", "severity": "info", "replacement": "dynamic environment", "context": "fast-paced agile environment."},
+        {"term": "experienced", "category": "age", "severity": "info", "replacement": "skilled", "context": "experienced software engineer."},
+        {"term": "senior", "category": "age", "severity": "info", "replacement": "lead", "context": "senior software engineer."},
+        {"term": "communication skills", "category": "gender", "severity": "info", "replacement": "interpersonal articulation", "context": "strong verbal and written communication skills."},
         {"term": "intuitive", "category": "gender", "severity": "info", "replacement": "insightful", "context": "intuitive grasp of UX research."},
         {"term": "peacemaker", "category": "gender", "severity": "info", "replacement": "conflict mediator", "context": "peacemaker during high-stakes client negotiations."},
         {"term": "consensus-builder", "category": "gender", "severity": "info", "replacement": "cross-functional coordinator", "context": "proven consensus-builder among department heads."},

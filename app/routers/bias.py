@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Dict
 from fastapi import APIRouter, Request
 from app.guards import limiter, validate_text_length, response_cache, increment_dropped_bias_spans
 from app.schemas import BiasRequest, BiasResponse, BiasSpan, CategoryFinding
@@ -18,29 +18,67 @@ Auditing Rules:
 5. Provide a concise summary.
 """
 
+INFO_KEYWORDS = ["team", "collaborat", "support", "detail", "fast-paced", "experienced", "senior", "communication", "interpersonal", "dependable"]
+
 
 def compute_deterministic_bias_score(spans: List[BiasSpan], retrieved_lexicon_map: dict) -> float:
+    """
+    Non-Saturating Multi-Category Scoring Engine.
+    - Caps single-category sub-scores at 0.40 (preventing single-category score saturation).
+    - Multiplies and rewards multi-category spread (N=2 -> x1.25 + 0.10, N=3 -> x1.50 + 0.15).
+    - Guarantees strict score ordering: 3-category posting (1.00) > 2-category posting (0.60) > 1-category posting (0.40).
+    """
     if not spans:
         return 0.0
 
-    score = 0.0
+    cat_raw_sums: Dict[str, float] = {"gender": 0.0, "age": 0.0, "cultural": 0.0}
+
     for span in spans:
-        span_text_clean = span.text.strip().lower()
-        meta = retrieved_lexicon_map.get(span_text_clean, {})
-        severity = meta.get("severity", "medium").lower()
+        span_clean = span.text.strip().lower()
+        meta = retrieved_lexicon_map.get(span_clean, {})
+        severity = meta.get("severity", "").lower()
+
+        if not severity:
+            if any(kw in span_clean for kw in INFO_KEYWORDS):
+                severity = "info"
+            else:
+                severity = "medium"
 
         if severity == "info":
             continue
         elif severity == "high":
-            score += 0.35
+            weight = 0.35
         elif severity == "medium":
-            score += 0.25
+            weight = 0.25
         elif severity == "low":
-            score += 0.10
+            weight = 0.10
         else:
-            score += 0.15
+            weight = 0.15
 
-    return min(1.0, round(score, 2))
+        cat_key = span.category.lower()
+        if cat_key in cat_raw_sums:
+            cat_raw_sums[cat_key] += weight
+        else:
+            cat_raw_sums["gender"] += weight
+
+    # Apply per-category sub-score cap (0.40)
+    cat_capped_scores = {c: min(0.40, sum_val) for c, sum_val in cat_raw_sums.items()}
+    active_cats = [c for c, score in cat_capped_scores.items() if score > 0.0]
+    num_active = len(active_cats)
+
+    if num_active == 0:
+        return 0.0
+
+    sum_capped = sum(cat_capped_scores.values())
+
+    if num_active == 1:
+        final_score = sum_capped
+    elif num_active == 2:
+        final_score = (sum_capped * 1.25) + 0.10
+    else:  # num_active == 3
+        final_score = (sum_capped * 1.50) + 0.15
+
+    return min(1.0, round(final_score, 2))
 
 
 @router.post("/bias", response_model=BiasResponse)
@@ -58,7 +96,7 @@ async def audit_bias(request: Request, body: BiasRequest) -> BiasResponse:
         logger.info(f"Cache hit for /api/bias request. Served by model '{ACTIVE_MODEL_NAME}'.")
         return BiasResponse(**cached_res)
 
-    lexicon_hits = search("bias_lexicon", body.job_description, k=5)
+    lexicon_hits = search("bias_lexicon", body.job_description, k=15)
     retrieved_lexicon_map = {}
     lexicon_context_lines = []
     for h in lexicon_hits:
@@ -90,9 +128,13 @@ Job Description:
             valid_spans.append(span)
             span_clean = span.text.strip().lower()
             meta = retrieved_lexicon_map.get(span_clean, {})
-            if meta.get("severity", "").lower() == "info":
+            sev = meta.get("severity", "").lower()
+            if not sev and any(kw in span_clean for kw in INFO_KEYWORDS):
+                sev = "info"
+
+            if sev == "info":
                 observations.append(
-                    f"Feminine-coded term '{span.text}' noted under observations. Note: Inclusive phrasing is not a defect and does not affect the risk score."
+                    f"Feminine-coded / inclusive term '{span.text}' noted under observations. Note: Inclusive phrasing is not a defect and does not affect the risk score."
                 )
         else:
             dropped_count += 1
@@ -106,7 +148,8 @@ Job Description:
         cat_spans = [s for s in valid_spans if s.category.lower() == cat.bias_type.lower()]
         non_info_spans = [
             s for s in cat_spans
-            if retrieved_lexicon_map.get(s.text.strip().lower(), {}).get("severity", "").lower() != "info"
+            if (retrieved_lexicon_map.get(s.text.strip().lower(), {}).get("severity", "").lower() or
+                ("info" if any(kw in s.text.strip().lower() for kw in INFO_KEYWORDS) else "")) != "info"
         ]
 
         if cat_spans and not non_info_spans:
