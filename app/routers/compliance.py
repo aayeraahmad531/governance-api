@@ -12,24 +12,27 @@ router = APIRouter(prefix="/api", tags=["compliance"])
 
 MIN_SIMILARITY_SCORE = 0.25
 
+PRINCIPLE_QUERIES = [
+    "transparency information provided to deployers, instructions for use, disclosure",
+    "human oversight natural persons monitoring, override, intervention",
+    "accuracy robustness cybersecurity, resilience, performance levels",
+    "data governance training data bias examination, discriminatory outcomes",
+    "personal data processing, data protection, privacy safeguards",
+    "record keeping, logging, technical documentation, conformity assessment",
+    "prohibited AI practices, banned AI systems, emotion recognition workplace, biometric categorisation"
+]
+
 SYSTEM_PROMPT = """You are an official EU AI Act compliance auditor evaluating AI systems against regulatory mandates.
 
-Regulatory Article Mapping:
-- Human oversight violations -> cite Article 14
-- Non-discrimination or Data governance / bias violations -> cite Article 10
-- Transparency violations -> cite Article 13
-- Accuracy and robustness violations -> cite Article 15
-- Technical documentation violations -> cite Article 11
-
 Rules:
-- Cite ONLY article numbers present in the retrieved EU AI Act reference passages (e.g., 'Article 14', 'Article 10').
-- For each violation, specify principle, severity (high|medium|low), article_reference (e.g. 'Article 14'), description, action, and source excerpt.
+- Cite ONLY article numbers present in the retrieved EU AI Act reference passages (e.g., 'Article 14', 'Article 50', 'Article 5').
+- For each violation, specify principle, severity (high|medium|low), article_reference (e.g. 'Article 50'), description, action, and source excerpt.
 - Two distinct violations must NOT cite the same article unless they genuinely address the same regulatory mandate.
 """
 
 
 def extract_article_numbers(text_or_meta: str) -> List[str]:
-    """Extracts clean article identifier strings, e.g. '14', '13', '10'."""
+    """Extracts clean article identifier strings, e.g. '14', '13', '10', '50', '5'."""
     s = str(text_or_meta).lower()
     matches = re.findall(r"(?:article|art\.?)\s*(\d+)", s)
     if not matches:
@@ -71,13 +74,15 @@ async def check_compliance(request: Request, body: ComplianceRequest) -> Complia
         return ComplianceResponse(**cached_res)
 
     query_text = f"{body.content} {body.context or ''}".strip()
-    dense_hits = search("eu_ai_act", query_text, k=20)
-    h1 = search("eu_ai_act", "Article 14 Human oversight natural persons", k=5)
-    h2 = search("eu_ai_act", "Article 10 Data governance training testing bias", k=5)
+    situational_hits = search("eu_ai_act", query_text, k=15)
+
+    principle_hits = []
+    for p_query in PRINCIPLE_QUERIES:
+        principle_hits.extend(search("eu_ai_act", p_query, k=3))
 
     # Deduplicate hits by text snippet while filtering by similarity floor
     all_hits_map = {}
-    for h in h1 + h2 + dense_hits:
+    for h in principle_hits + situational_hits:
         if h.get("score", 0.0) >= MIN_SIMILARITY_SCORE and h["text"] not in all_hits_map:
             all_hits_map[h["text"]] = h
 

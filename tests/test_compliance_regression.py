@@ -11,14 +11,22 @@ POSTAL_CODE_CREDIT_REJECTION_INPUT = {
     "context": "Fintech automated lending system"
 }
 
+CHATBOT_TRANSPARENCY_INPUT = {
+    "content": "Our chatbot generates customer support replies without telling users they are talking to an AI.",
+    "context": "E-commerce customer service assistant"
+}
+
+WORKPLACE_EMOTION_RECOGNITION_INPUT = {
+    "content": "We deploy an emotion recognition system in our office to monitor employee productivity.",
+    "context": "HR internal workplace monitoring"
+}
+
 
 @pytest.mark.live
 def test_compliance_cites_correct_articles():
     """
-    Live Regression Test:
-    Verifies that credit rejection based on postal codes without human intervention
-    cites Article 10 and/or Article 14, and does NOT cite Article 95.
-    Also verifies each violation carries its grounded legal reference passage as source.
+    Case A: Credit rejection based on postal codes without human intervention
+    Must cite Article 10 and/or Article 14, and MUST NOT cite Article 95.
     """
     api_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
     if not api_key:
@@ -37,11 +45,10 @@ def test_compliance_cites_correct_articles():
     cited_articles = [v["article_reference"].lower() for v in violations]
     sources = [v["source"] for v in violations]
 
-    print("\n--- LIVE COMPLIANCE CITATION REGRESSION TEST ---")
+    print("\n--- LIVE COMPLIANCE CASE A: POSTAL CODE CREDIT REJECTION ---")
     print(f"Compliant: {data['compliant']}, Score: {data['score']}")
     for idx, v in enumerate(violations, 1):
         print(f"Violation {idx}: principle='{v['principle']}', article='{v['article_reference']}'")
-        print(f"  Source excerpt: {v['source'][:100]}...")
 
     # ASSERTION 1: Must NOT cite Article 95
     for art in cited_articles:
@@ -63,3 +70,68 @@ def test_compliance_cites_correct_articles():
         if len(set(arts)) > 1:
             assert len(set(sources)) > 1, f"Violations citing different articles ({arts}) shared identical source passage!"
 
+
+@pytest.mark.live
+def test_compliance_chatbot_transparency():
+    """
+    Case B: Customer support chatbot without AI disclosure
+    Must cite Article 50 (Transparency), and MUST NOT cite Article 10 or 14.
+    """
+    api_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        pytest.skip("GEMINI_API_KEY is not set.")
+
+    res = client.post("/api/compliance", json=CHATBOT_TRANSPARENCY_INPUT)
+    assert res.status_code == 200, f"API returned status {res.status_code}: {res.text}"
+
+    data = res.json()
+    assert data["compliant"] is False, f"Expected compliant=False, got {data['compliant']}"
+
+    violations = data.get("violations", [])
+    assert len(violations) > 0, "Expected at least 1 violation for non-compliant chatbot disclosure."
+
+    cited_articles = [v["article_reference"].lower() for v in violations]
+    print("\n--- LIVE COMPLIANCE CASE B: CHATBOT TRANSPARENCY ---")
+    print(f"Compliant: {data['compliant']}, Score: {data['score']}")
+    for idx, v in enumerate(violations, 1):
+        print(f"Violation {idx}: principle='{v['principle']}', article='{v['article_reference']}'")
+
+    # ASSERTION: Must cite Article 50 (Transparency) and MUST NOT cite 10 or 14
+    has_art_50 = any("50" in art for art in cited_articles)
+    assert has_art_50, f"Expected citation of Article 50 for undisclosed AI chatbot, got {cited_articles}"
+
+    for art in cited_articles:
+        assert "10" not in art and "14" not in art, f"Structural Bias! Chatbot transparency cited {art}"
+
+
+@pytest.mark.live
+def test_compliance_workplace_emotion_recognition():
+    """
+    Case C: Workplace emotion recognition system
+    Must cite Article 5 (Prohibited practices), and MUST NOT cite Article 10 or 14.
+    """
+    api_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        pytest.skip("GEMINI_API_KEY is not set.")
+
+    res = client.post("/api/compliance", json=WORKPLACE_EMOTION_RECOGNITION_INPUT)
+    assert res.status_code == 200, f"API returned status {res.status_code}: {res.text}"
+
+    data = res.json()
+    assert data["compliant"] is False, f"Expected compliant=False, got {data['compliant']}"
+
+    violations = data.get("violations", [])
+    assert len(violations) > 0, "Expected at least 1 violation for workplace emotion recognition."
+
+    cited_articles = [v["article_reference"].lower() for v in violations]
+    print("\n--- LIVE COMPLIANCE CASE C: WORKPLACE EMOTION RECOGNITION ---")
+    print(f"Compliant: {data['compliant']}, Score: {data['score']}")
+    for idx, v in enumerate(violations, 1):
+        print(f"Violation {idx}: principle='{v['principle']}', article='{v['article_reference']}'")
+
+    # ASSERTION: Must cite Article 5 (Prohibited practices) and MUST NOT cite 10 or 14
+    has_art_5 = any("5" in art for art in cited_articles)
+    assert has_art_5, f"Expected citation of Article 5 for workplace emotion recognition, got {cited_articles}"
+
+    for art in cited_articles:
+        assert "10" not in art and "14" not in art, f"Structural Bias! Workplace emotion recognition cited {art}"
