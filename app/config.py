@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
 
-    ALLOWED_ORIGINS: str = "http://localhost:8080"
+    ALLOWED_ORIGINS: str = "http://localhost:8080,http://localhost:3000,http://127.0.0.1:3000"
     CACHE_TTL_SECONDS: int = 86400
     CACHE_MAX_ENTRIES: int = 500
 

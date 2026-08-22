@@ -106,12 +106,15 @@ governance-api/
 # 1. Install runtime dependencies
 pip install -r requirements.txt
 
-# 2. Run local development server
+# 2. Run local development environment (API on 8080 + UI on 3000 concurrently)
+python scripts/dev.py
+
+# 3. Or run backend server standalone
 python -m uvicorn app.main:app --port 8080 --reload
 
-# 3. Rebuild vector indexes
+# 4. Rebuild vector indexes
 python scripts/build_index.py --all
 
-# 4. Run test suite
+# 5. Run test suite
 python -m pytest -o pythonpath=. -v
 ```
