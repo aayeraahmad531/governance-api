@@ -18,8 +18,8 @@ Auditing Rules:
 5. Provide a concise summary.
 """
 
-INCLUSIVE_KEYWORDS = ["collaborat", "support", "nurtur", "empath", "warm", "help", "caring", "soft-spoken", "sensitive", "relationship", "compassion", "team player", "team-oriented", "intuitive", "peacemaker", "consensus", "approachable"]
-NEUTRAL_KEYWORDS = ["fast-paced", "experienced", "senior", "communication skills", "detail-oriented", "dependable", "interpersonal skills", "competit"]
+INCLUSIVE_KEYWORDS = ["collaborat", "support", "nurtur", "empath", "warm", "help", "caring", "soft-spoken", "sensitive", "relationship", "compassion", "team player", "team-player", "team oriented", "team-oriented", "intuitive", "peacemaker", "consensus", "approachable"]
+NEUTRAL_KEYWORDS = ["fast-paced", "fast paced", "experienced", "senior", "communication", "detail-oriented", "detail oriented", "dependable", "interpersonal", "competit"]
 
 
 def compute_deterministic_bias_score(spans: List[BiasSpan], retrieved_lexicon_map: dict) -> float:
