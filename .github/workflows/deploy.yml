@@ -1,0 +1,51 @@
+name: Deploy governance-api
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx slowapi tokenizers onnxruntime
+
+      - name: Run Test Suite (Excluding Live API Tests)
+        run: |
+          python -m pytest -o pythonpath=. -v -m "not live"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy governance-api \
+            --source . \
+            --region asia-south1 \
+            --allow-unauthenticated \
+            --min-instances=0 \
+            --max-instances=3 \
+            --memory=1Gi \
+            --timeout=60 \
+            --set-env-vars LLM_PROVIDER=gemini,ALLOWED_ORIGINS="${{ secrets.ALLOWED_ORIGINS }}" \
+            --set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest

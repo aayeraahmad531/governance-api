@@ -28,8 +28,8 @@ def test_eu_ai_act_search_article_14():
 def test_bias_lexicon_feminine_info_severity():
     results_feminine = search("bias_lexicon", "nurturing supportive collaborative team player", k=5)
     assert len(results_feminine) > 0
-    # Feminine-coded and standard terms must have severity in {'inclusive', 'neutral', 'info'} and carry zero score impact
-    non_scoring_entries = [r for r in results_feminine if r["meta"].get("severity") in {"inclusive", "neutral", "info"}]
+    # Feminine-coded and standard terms must have severity in {'inclusive', 'neutral'} and carry zero score impact
+    non_scoring_entries = [r for r in results_feminine if r["meta"].get("severity") in {"inclusive", "neutral"}]
     assert len(non_scoring_entries) > 0
 
 

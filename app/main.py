@@ -83,9 +83,10 @@ async def custom_schema_handler(request: Request, exc: SchemaValidationFailed):
 
 @app.exception_handler(Exception)
 async def custom_unhandled_exception_handler(request: Request, exc: Exception):
-    # Privacy commitment: log ONLY exception type and path, NEVER traceback frame locals
+    import traceback
     timestamp = datetime.now(timezone.utc).isoformat()
-    logger.error(f"[{timestamp}] PATH={request.url.path} ERROR={type(exc).__name__}")
+    tb_str = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    logger.error(f"[{timestamp}] PATH={request.url.path} UNHANDLED_EXCEPTION ({type(exc).__name__}):\n{tb_str}")
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"detail": "An internal server error occurred."}

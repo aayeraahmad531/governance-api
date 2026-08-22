@@ -180,7 +180,7 @@ def get_refined_bias_lexicon() -> tuple[List[str], List[Dict[str, Any]]]:
         {"term": "detail-oriented", "category": "gender", "severity": "neutral", "replacement": "meticulous", "context": "detail-oriented auditor for financial reports."},
         {"term": "dependable", "category": "gender", "severity": "neutral", "replacement": "reliable", "context": "dependable asset to our operations team."},
         {"term": "interpersonal skills", "category": "gender", "severity": "neutral", "replacement": "communication capabilities", "context": "exceptional interpersonal skills required."},
-        {"term": "competitive", "category": "gender", "severity": "neutral", "replacement": "market-aligned compensation / goal-oriented", "context": "competitive salary and benefits package."},
+        {"term": "competitive", "category": "neutral", "severity": "neutral", "replacement": "market-aligned compensation / goal-oriented", "context": "competitive salary and benefits package."},
 
 
         # Gendered Titles & Common Pronouns (High/Medium/Low severity)
