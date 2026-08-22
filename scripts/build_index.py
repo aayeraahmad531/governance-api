@@ -144,7 +144,6 @@ def get_refined_bias_lexicon() -> tuple[List[str], List[Dict[str, Any]]]:
         {"term": "aggressive", "category": "gender", "severity": "high", "replacement": "ambitious", "context": "seeking an aggressive leader to conquer market share."},
         {"term": "dominant", "category": "gender", "severity": "high", "replacement": "established market leader", "context": "dominant force in enterprise software."},
         {"term": "crush", "category": "gender", "severity": "medium", "replacement": "exceed targets", "context": "looking for someone ready to crush quarterly quotas."},
-        {"term": "competitive", "category": "gender", "severity": "low", "replacement": "goal-oriented", "context": "thrives in a competitive sales environment."},
         {"term": "fearless", "category": "gender", "severity": "medium", "replacement": "resilient", "context": "seeking a fearless innovator to spearhead new initiatives."},
         {"term": "work hard play hard", "category": "gender", "severity": "medium", "replacement": "high-energy team culture", "context": "intense work hard play hard culture."},
         {"term": "killer", "category": "gender", "severity": "high", "replacement": "exceptional feature", "context": "looking for a killer instinct in deal closing."},
@@ -181,6 +180,7 @@ def get_refined_bias_lexicon() -> tuple[List[str], List[Dict[str, Any]]]:
         {"term": "detail-oriented", "category": "gender", "severity": "neutral", "replacement": "meticulous", "context": "detail-oriented auditor for financial reports."},
         {"term": "dependable", "category": "gender", "severity": "neutral", "replacement": "reliable", "context": "dependable asset to our operations team."},
         {"term": "interpersonal skills", "category": "gender", "severity": "neutral", "replacement": "communication capabilities", "context": "exceptional interpersonal skills required."},
+        {"term": "competitive", "category": "gender", "severity": "neutral", "replacement": "market-aligned compensation / goal-oriented", "context": "competitive salary and benefits package."},
 
 
         # Gendered Titles & Common Pronouns (High/Medium/Low severity)

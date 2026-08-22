@@ -15,7 +15,8 @@ RUN useradd -m -u 1000 appuser
 COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-COPY . .
+COPY app ./app
+COPY data ./data
 
 # Set permissions
 RUN chown -R appuser:appuser /app

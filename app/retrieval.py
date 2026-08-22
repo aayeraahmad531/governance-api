@@ -26,7 +26,7 @@ def init_onnx_embedder():
             _session = ort.InferenceSession(ONNX_MODEL_PATH)
             _tokenizer = Tokenizer.from_file(tokenizer_json)
             _tokenizer.enable_truncation(max_length=512)
-            _tokenizer.enable_padding(length=512)
+            _tokenizer.no_padding()
             logger.info("ONNX Runtime query embedder ready.")
         except Exception as e:
             logger.error(f"Failed to initialize ONNX embedder: {e}")
