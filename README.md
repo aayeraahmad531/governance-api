@@ -31,3 +31,17 @@ python -m uvicorn app.main:app --port 8080 --reload
 # Run test suite
 python -m pytest -o pythonpath=. -v tests/
 ```
+
+## Scoring Methodology & Architectural Design Choices
+
+### Single-Category Score Ceiling (0.40 Capping)
+The bias detection engine enforces a deliberate architectural ceiling: **single-category bias is capped at a maximum risk contribution of 0.40 / 1.00**, regardless of the volume of biased terms detected within that single category.
+
+#### Design Rationale
+- **Single-Dimension Jargon vs. Systemic Exclusion**: In real-world recruitment, a job posting containing multiple masculine-coded jargon terms (e.g., `ninja`, `rockstar`, `crush`, `killer`) represents isolated stylistic jargon within a single category (Gender). Un-capped scoring would cause a 4-term gender-biased posting to saturate at 1.00, obscuring the difference between single-category jargon and severe multi-dimensional exclusion.
+- **Multi-Category Spread Elevation**: To accurately represent composite risk, postings that combine barriers across multiple demographic dimensions (e.g., Gender + Age + Cultural: `rockstar`, `young`, `Western`, `He`) are awarded category spread multipliers and bonuses to reach **1.00**.
+- **Ordering Guarantee**: This design guarantees strict risk score ordering:
+  - 3-Category Exclusionary Postings: **1.00**
+  - 2-Category Exclusionary Postings: **0.60 – 0.70**
+  - 1-Category Jargon-Heavy Postings: **0.40 Max**
+
