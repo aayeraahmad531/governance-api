@@ -58,7 +58,7 @@ class ComplianceResponse(BaseModel):
 # --- Hallucination Schemas ---
 class HallucinationRequest(BaseModel):
     topic: str = Field(..., description="Topic to test for hallucinations.")
-    num_questions: int = Field(default=3, ge=1, le=3, description="Number of questions (1-3).")
+    num_questions: int = Field(default=2, ge=1, le=3, description="Number of questions (1-3).")
 
 
 class HallucinationQueryResult(BaseModel):

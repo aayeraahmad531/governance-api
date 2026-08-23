@@ -1,13 +1,3 @@
----
-title: AI Governance API
-emoji: ⚖️
-colorFrom: gray
-colorTo: purple
-sdk: docker
-app_port: 7860
-pinned: false
----
-
 # governance-api
 
 Unified governance FastAPI service wrapping enterprise AI auditing & compliance tools:
@@ -21,8 +11,8 @@ Unified governance FastAPI service wrapping enterprise AI auditing & compliance 
 
 ```mermaid
 graph TD
-    Client["Browser (Vercel Frontend)"] -->|HTTPS POST| API["Hugging Face Space (FastAPI Docker)"]
-    subgraph Container["Hugging Face Space Container (python:3.13-slim)"]
+    Client["Browser (Vercel Frontend)"] -->|HTTPS POST| API["Cloud Run Service (FastAPI)"]
+    subgraph Container["Cloud Run Container (python:3.13-slim)"]
         API --> Embedder["ONNX Query Embedder (all-MiniLM-L6-v2)"]
         Embedder -->|Sub-ms Dot Product| Indexes[".npz Vector Indexes (eu_ai_act, bias_lexicon, facts)"]
         API --> Guard["Semaphore(2) & SHA256 LRU Cache"]
@@ -43,7 +33,7 @@ During retrieval benchmarking, vector dot-product calculation was confirmed sub-
 ### 2. Built Container & Asset Footprint
 - **Built Docker Image Size**: **[MEASURED]** **1.01 GB** (`docker images governance-api:local` - includes `python:3.13-slim` base, ONNX runtime, tokenizer binaries, vector indices, and Python site-packages).
 - **External Weights File (`data/model.onnx.data`)**: **[MEASURED]** **71.4 MB** (copied into container during Docker build).
-- **Space Sleep & Cold Start Behavior**: Free CPU Hugging Face Spaces enter sleep mode after period of inactivity. Cold wake latency includes container initialization plus **[MEASURED]** **2.25s** Python/ONNX module import time (exact wake time measured post-deployment).
+- **Cloud Run Cold Start Latency**: **[ESTIMATED]** **~15s–25s** (includes GCP container scheduling, image pull, and **[MEASURED]** **2.25s** Python/ONNX module import time).
 
 ---
 
@@ -52,12 +42,12 @@ During retrieval benchmarking, vector dot-product calculation was confirmed sub-
 | Component | Limit / Multiplier | Rationale |
 | :--- | :--- | :--- |
 | **`POST /api/bias`** | 1 LLM call | Single structured extraction call |
-| **`POST /api/compliance`** | 1 LLM call | Single structured compliance evaluation |
-| **`POST /api/hallucination`** | $2N + 1$ LLM calls | 7 calls for default $N=3$ (1 question + 3 extractions + 3 verifications) |
-| **Upstream RPM Limit** | 15 RPM | Enforced by Gemini 3.5 Flash-Lite free tier |
+| **`POST /api/compliance`** | 1 LLM call | Single structured compliance evaluation (capped at 3 violations) |
+| **`POST /api/hallucination`** | $2N + 1$ LLM calls | 5 calls for default $N=2$ (1 question + 2 extractions + 2 verifications) |
+| **Upstream RPM Limit** | 15 RPM | Enforced by Gemini free tier |
 | **Endpoint Rate Limit** | 5 req / hour / IP | SlowAPI IP rate limiter |
 | **Concurrency Ceiling** | `Semaphore(2)` | Protects against free-tier rate limit exhaustion |
-| **Infrastructure Cost Ceiling** | Structural Free Tier | Hugging Face Spaces Free CPU tier (no billing account required) |
+| **Cloud Run Ceiling** | `--max-instances=3` | Strict infrastructure cost ceiling |
 
 ---
 
@@ -65,9 +55,9 @@ During retrieval benchmarking, vector dot-product calculation was confirmed sub-
 
 | Endpoint | Warm Latency | Target | Status & Notes |
 | :--- | :---: | :---: | :--- |
-| **`POST /api/bias`** | **[MEASURED] 4.86s** | < 5.0s | **PASSED** (k=10 retrieval depth) |
-| **`POST /api/compliance`** | **[MEASURED] 6.39s** | < 5.0s | **Exceeds 5s Target** (Required for multi-article regulatory reasoning) |
-| **`POST /api/hallucination`** | **[MEASURED] 22.87s** | < 25.0s | **PASSED** (7 calls routed through `Semaphore(2)`) |
+| **`POST /api/bias`** | **[MEASURED] 5.62s** | < 6.0s | **PASSED** (k=5 retrieval depth, 77-token prompt) |
+| **`POST /api/compliance`** | **[MEASURED] 5.40s** | < 8.0s | **PASSED** (Capped at 3 most severe violations; 8 ONNX queries: 0.080s) |
+| **`POST /api/hallucination`** | **[MEASURED] 7.65s** | < 10.0s | **PASSED** (Uncached 5 LLM calls pipeline, default N=2, routed through `Semaphore(2)`) |
 
 ---
 
@@ -103,9 +93,9 @@ governance-api/
 │   ├── index.html         # Frontend landing page
 │   ├── vercel.json        # Vercel security headers & CSP
 │   └── assets/            # Frontend JS & CSS
-├── Dockerfile             # Multi-stage production container build (Port 7860)
+├── Dockerfile             # Multi-stage production container build
 ├── .dockerignore          # Docker build exclusion list
-├── deploy.sh              # Hugging Face Space git push script
+├── deploy.sh              # Cloud Run deployment script
 └── requirements.txt       # Production dependencies (No PyTorch)
 ```
 
@@ -117,11 +107,11 @@ governance-api/
 # 1. Install runtime dependencies
 pip install -r requirements.txt
 
-# 2. Run local development environment (API on 7860 + UI on 3000 concurrently)
+# 2. Run local development environment (API on 8080 + UI on 3000 concurrently)
 python scripts/dev.py
 
 # 3. Or run backend server standalone
-python -m uvicorn app.main:app --port 7860 --reload
+python -m uvicorn app.main:app --port 8080 --reload
 
 # 4. Rebuild vector indexes
 python scripts/build_index.py --all

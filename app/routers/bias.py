@@ -9,13 +9,12 @@ from app.llm import complete, ACTIVE_MODEL_NAME
 logger = logging.getLogger("governance_api.routers.bias")
 router = APIRouter(prefix="/api", tags=["bias"])
 
-SYSTEM_PROMPT = """You are an expert HR compliance auditor analyzing job descriptions for gender, age, and cultural bias.
-Auditing Rules:
-1. Examine the text against the provided bias lexicon entries.
-2. Under 'spans', extract EVERY biased term. The 'text' field MUST be copied EXACTLY VERBATIM (character-for-character) from the input text.
-3. Classify category: gender, age, or cultural.
-4. Evaluate detected (boolean), confidence (0.0-1.0), examples, and replacement suggestions.
-5. Provide a concise summary.
+SYSTEM_PROMPT = """You are an HR compliance auditor detecting gender, age, and cultural bias in job postings.
+Rules:
+1. Extract biased terms in 'spans' verbatim from input.
+2. Classify category (gender/age/cultural), confidence, examples, and replacement.
+3. Ignore neutral terms (senior, experienced, interpersonal).
+4. Provide a 1-sentence summary.
 """
 
 INCLUSIVE_KEYWORDS = ["collaborat", "support", "nurtur", "empath", "warm", "help", "caring", "soft-spoken", "sensitive", "relationship", "compassion", "team player", "team-player", "team oriented", "team-oriented", "intuitive", "peacemaker", "consensus", "approachable"]
@@ -99,7 +98,7 @@ async def audit_bias(request: Request, body: BiasRequest) -> BiasResponse:
         logger.info(f"Cache hit for /api/bias request. Served by model '{ACTIVE_MODEL_NAME}'.")
         return BiasResponse(**cached_res)
 
-    lexicon_hits = search("bias_lexicon", body.job_description, k=10)
+    lexicon_hits = search("bias_lexicon", body.job_description, k=5)
     retrieved_lexicon_map = {}
     lexicon_context_lines = []
     for h in lexicon_hits:
@@ -168,6 +167,8 @@ Job Description:
     llm_res.spans = valid_spans
     llm_res.observations = list(dict.fromkeys(observations))  # Deduplicate observations
     llm_res.overall_bias_score = compute_deterministic_bias_score(valid_spans, retrieved_lexicon_map)
+    if not valid_spans and llm_res.overall_bias_score == 0.0:
+        llm_res.summary = "No actionable gender, age, or cultural bias detected in the job posting."
 
     logger.info(f"/api/bias successfully audited request using serving model '{ACTIVE_MODEL_NAME}'.")
     response_cache.set(cache_payload, llm_res.model_dump())

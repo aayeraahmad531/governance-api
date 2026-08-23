@@ -25,8 +25,10 @@ PRINCIPLE_QUERIES = [
 SYSTEM_PROMPT = """You are an official EU AI Act compliance auditor evaluating AI systems against regulatory mandates.
 
 Rules:
-- Cite ONLY article numbers present in the retrieved EU AI Act reference passages (e.g., 'Article 14', 'Article 50', 'Article 5').
+- Identify AT MOST the 3 most severe violations across all evaluated principles. Do NOT exhaustively list low-impact issues.
 - For each violation, specify principle, severity (high|medium|low), article_reference (e.g. 'Article 50'), description, action, and source excerpt.
+- Keep description and action concise, roughly 2 sentences each. Do NOT truncate the source field.
+- Cite ONLY article numbers present in the retrieved EU AI Act reference passages (e.g., 'Article 14', 'Article 50', 'Article 5').
 - Two distinct violations must NOT cite the same article unless they genuinely address the same regulatory mandate.
 """
 
@@ -154,7 +156,7 @@ Context: {body.context or 'N/A'}
     if dropped_count > 0:
         increment_dropped_compliance_violations(dropped_count)
 
-    llm_res.violations = valid_violations
+    llm_res.violations = valid_violations[:3]
     llm_res.compliant = len(valid_violations) == 0
     llm_res.score = compute_deterministic_compliance_score(valid_violations)
 

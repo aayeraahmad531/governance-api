@@ -32,7 +32,7 @@ def get_llm(provider: str):
         return ChatGoogleGenerativeAI(
             model=ACTIVE_MODEL_NAME,
             google_api_key=settings.GEMINI_API_KEY,
-            max_output_tokens=1000
+            max_output_tokens=4000
         )
     elif provider_name == "openai":
         if not settings.OPENAI_API_KEY:

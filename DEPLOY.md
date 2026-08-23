@@ -1,110 +1,99 @@
-# Deployment Guide — Hugging Face Spaces + Vercel
+# Deployment & Configuration Guide
 
-This guide provides a step-by-step checklist to deploy the **AI Governance API** backend to Hugging Face Spaces (Docker SDK, Free CPU) and the frontend site to Vercel.
-
----
-
-## Overview & Architecture
-
-- **Backend**: Containerized FastAPI service running on Hugging Face Spaces (Port 7860, Docker SDK, Free CPU, no credit card required).
-- **Frontend**: Static 4-page UI (`web/`) deployed on Vercel.
-- **Backend API Base URL**: `https://<YOUR_HF_USERNAME>-<YOUR_SPACE_NAME>.hf.space`
-- **Frontend URL**: `https://<YOUR_VERCEL_APP>.vercel.app`
+This document contains the step-by-step pre-deployment checklist for deploying the **Governance API** backend to Google Cloud Run (`asia-south1`) and the **web frontend** to Vercel.
 
 ---
 
-## Step 1: Create Hugging Face Space (Browser Step)
+## 1. Secret Manager Setup (One-Time Prerequisites)
 
-1. Open your browser and log in to [Hugging Face](https://huggingface.co/).
-2. Navigate to **New Space** ([https://huggingface.co/new-space](https://huggingface.co/new-space)).
-3. Configure the Space settings:
-   - **Space Name**: `ai-governance-api` (or your preferred name)
-   - **License**: `mit`
-   - **Select the Space SDK**: **Docker** $\rightarrow$ **Blank**
-   - **Space Hardware**: **CPU Basic (2 vCPU · 16 GB - Free)**
-   - **Privacy**: **Public**
-4. Click **Create Space**.
-
----
-
-## Step 2: Configure Environment Variables & Secrets in Hugging Face (Browser Step)
-
-1. On your newly created Space page, click on **Settings** (top right tab).
-2. Scroll down to **Variables and secrets**.
-3. Add your secret key:
-   - Click **New secret**.
-   - **Name**: `GEMINI_API_KEY`
-   - **Value**: `<YOUR_GEMINI_API_KEY>` (paste your key from local `.env`)
-   - Click **Save**.
-4. Add environment variables:
-   - Click **New variable**.
-   - **Name**: `LLM_PROVIDER`
-   - **Value**: `gemini`
-   - Click **Save**.
-   - Click **New variable**.
-   - **Name**: `DEBUG`
-   - **Value**: `false`
-   - Click **Save**.
-   - Click **New variable**.
-   - **Name**: `ALLOWED_ORIGINS`
-   - **Value**: `https://<YOUR_VERCEL_APP>.vercel.app` (**REVERSAL REMINDER**: This takes your **Vercel Frontend URL**, NOT the Hugging Face URL!).
-   - Click **Save**.
-
----
-
-## Step 3: Push Code to Hugging Face Space Remote
-
-Run the following commands in your local terminal:
+Before deploying to Cloud Run, create the `GEMINI_API_KEY` secret in Google Secret Manager and grant the default compute service account read access to it:
 
 ```bash
-# 1. Add your Hugging Face Space as a git remote
-git remote add hf https://huggingface.co/spaces/<YOUR_HF_USERNAME>/<YOUR_SPACE_NAME>
+# 1. Create the secret from your API key string
+echo -n "<YOUR_GEMINI_API_KEY>" | gcloud secrets create GEMINI_API_KEY --data-file=-
 
-# 2. Push the code to build and start the Space container
-git push hf main:main
-```
-
-Once pushed, Hugging Face will automatically execute `Dockerfile` and start the container on port `7860`.
-
----
-
-## Step 4: Synchronize URLs Across Configuration Files
-
-You must update the deployed backend URL in exactly **THREE** places:
-
-1. **`web/assets/site.js`** (Line 5):
-   ```javascript
-   const API_BASE = "https://<YOUR_HF_USERNAME>-<YOUR_SPACE_NAME>.hf.space";
-   ```
-2. **`web/vercel.json`** (Line 16 - `connect-src` CSP Header):
-   ```json
-   "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://localhost:7860 http://127.0.0.1:7860 https://<YOUR_HF_USERNAME>-<YOUR_SPACE_NAME>.hf.space;"
-   ```
-3. **Hugging Face Space Settings** (`ALLOWED_ORIGINS` variable):
-   - Set `ALLOWED_ORIGINS` to your Vercel URL (`https://<YOUR_VERCEL_APP>.vercel.app`).
-   - **Reversal Reminder**: Hugging Face configuration takes your **Vercel URL**; Vercel CSP configuration takes your **Hugging Face URL**.
-
----
-
-## Step 5: Deploy Frontend to Vercel
-
-```bash
-# Deploy static web/ directory to Vercel
-npx vercel --prod
+# 2. Grant the default compute service account permission to access the secret
+gcloud secrets add-iam-policy-binding GEMINI_API_KEY \
+  --member="serviceAccount:$(gcloud projects describe $(gcloud config get-value project) --format='value(projectNumber)')-compute@developer.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
 ```
 
 ---
 
-## Step 6: Verify End-to-End Operation
+## 2. Deploy the Backend to Google Cloud Run
 
-1. Open your deployed Vercel site in a browser (e.g. `https://<YOUR_VERCEL_APP>.vercel.app/bias.html`).
-2. Verify the **status dot** in the UI console header is **GREEN** (indicating `live` connection to Hugging Face Space) rather than grey (`cached`).
-3. Click **Run audit** on `bias.html`.
-4. Confirm a real audit result is rendered with highlighted spans and category risk scores.
+Run the following command from the root of the repository to build and deploy the service:
 
-### Troubleshooting Status Indicators
-- **Grey Dot (`cached`)**:
-  - The `API_BASE` in `web/assets/site.js` is still `null` or pointing to `localhost`.
-  - The Hugging Face Space is currently sleeping (free Spaces sleep after inactivity). The frontend auto-pings `/health` to wake it up; wait 15–30 seconds for container startup.
-- **Red CORS Error in Console**:
-  - `ALLOWED_ORIGINS` in Hugging Face Space Settings does not match the exact Vercel origin. Check for typos or trailing slashes.
+```bash
+gcloud run deploy governance-api \
+  --source . \
+  --region asia-south1 \
+  --allow-unauthenticated \
+  --port 8080 \
+  --min-instances=0 \
+  --max-instances=3 \
+  --memory=1Gi \
+  --timeout=120 \
+  --set-env-vars LLM_PROVIDER=gemini,DEBUG=false,ALLOWED_ORIGINS="<YOUR_VERCEL_URL>" \
+  --set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest
+```
+
+### Why Each Flag Matters
+- `--max-instances=3`: Acts as a **hard cost ceiling** preventing runaway billing spikes on a public endpoint.
+- `--set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest`: Keeps secret keys out of shell history and plain-text env vars in the Cloud Run console.
+- `--region asia-south1`: Deploys to **Mumbai**, minimizing latency for clients in India (compared to `us-central1` which adds hundreds of ms round-trip).
+- `--timeout=120`: Accommodates worst-case multi-turn retrieval/LLM latency on the `/api/hallucination` endpoint without 504 gateway timeouts.
+- `--set-env-vars ALLOWED_ORIGINS="<YOUR_VERCEL_URL>"`: Configures CORS to whitelist only your frontend Vercel URL.
+
+> [!CAUTION]
+> **REVERSAL CALLOUT**: `ALLOWED_ORIGINS` in Cloud Run takes your **Vercel frontend URL** (e.g., `https://your-app.vercel.app`), NOT the Cloud Run URL! Setting this to the Cloud Run URL will cause browser CORS blocks.
+
+---
+
+## 3. Retrieve Your Deployed Cloud Run URL
+
+Once deployment completes, retrieve your Cloud Run URL:
+
+```bash
+gcloud run services describe governance-api --region asia-south1 --format 'value(status.url)'
+```
+
+*Example Output*: `https://governance-api-abc123xyz-el.a.run.app`
+
+---
+
+## 4. Update the THREE Required URL Locations
+
+You must paste your deployed URLs into **exactly THREE places**:
+
+| Location | File / Config | Target Value | Purpose |
+| :--- | :--- | :--- | :--- |
+| **1. Frontend JS** | `web/assets/site.js` | `const API_BASE = "<YOUR_CLOUD_RUN_URL>";` | Directs client-side AJAX calls to backend. |
+| **2. Vercel CSP Header** | `web/vercel.json` | `"connect-src 'self' http://localhost:8080 http://127.0.0.1:8080 <YOUR_CLOUD_RUN_URL>;"` | Strict CSP header allowing browser connections to Cloud Run. |
+| **3. Cloud Run Env Var** | Cloud Run Service | `ALLOWED_ORIGINS="<YOUR_VERCEL_URL>"` | CORS Whitelist on Cloud Run. |
+
+---
+
+## 5. Deploy the Static Frontend to Vercel
+
+```bash
+# 1. Install Vercel CLI (or link repository in Vercel Dashboard)
+npm i -g vercel
+
+# 2. Deploy from repo root
+vercel --prod
+```
+
+---
+
+## 6. Verification Checklist & Troubleshooting
+
+1. Open your deployed Vercel URL in a browser (e.g., `https://your-app.vercel.app/bias.html`).
+2. **Check the Status Indicator**: Look at the top-right status dot next to "API Status".
+   - 🟢 **Green**: Connected to backend (`GET /health` returned HTTP 200).
+   - 🔘 **Grey**: Disconnected / Error.
+3. **Run Analysis**: Click **"Analyze Job Posting"** on `bias.html` and confirm live result card rendering.
+
+### What a Grey Dot Means (Two Things to Check)
+1. **CORS Mismatch**: Verify that `ALLOWED_ORIGINS` on Cloud Run matches your exact Vercel origin (`https://your-app.vercel.app`).
+2. **API Base Mismatch**: Verify that `API_BASE` in `web/assets/site.js` and `connect-src` in `web/vercel.json` match your Cloud Run URL (`https://governance-api-abc123xyz-el.a.run.app`).

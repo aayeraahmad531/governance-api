@@ -2,7 +2,7 @@
    1. PASTE YOUR DEPLOYED CLOUD RUN URL HERE (no trailing slash)
    Leave null and every demo runs on cached samples.
    ============================================================ */
-const API_BASE = "http://localhost:7860";
+const API_BASE = "https://governance-api-806052580337.asia-south1.run.app";
 
 /* ============================================================
    2. RESUME — every page renders from this object. Edit here only.
