@@ -23,7 +23,6 @@ RUN chown -R appuser:appuser /app
 
 USER appuser
 
-ENV PORT=7860
-EXPOSE 7860
+EXPOSE 8080
 
-CMD ["sh", "-c", "python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860}"]
+CMD ["sh", "-c", "exec python -m uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
