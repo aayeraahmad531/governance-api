@@ -1,3 +1,13 @@
+---
+title: AI Governance API
+emoji: ⚖️
+colorFrom: gray
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # governance-api
 
 Unified governance FastAPI service wrapping enterprise AI auditing & compliance tools:
@@ -11,8 +21,8 @@ Unified governance FastAPI service wrapping enterprise AI auditing & compliance 
 
 ```mermaid
 graph TD
-    Client["Browser (Vercel Frontend)"] -->|HTTPS POST| API["Cloud Run Service (FastAPI)"]
-    subgraph Container["Cloud Run Container (python:3.13-slim)"]
+    Client["Browser (Vercel Frontend)"] -->|HTTPS POST| API["Hugging Face Space (FastAPI Docker)"]
+    subgraph Container["Hugging Face Space Container (python:3.13-slim)"]
         API --> Embedder["ONNX Query Embedder (all-MiniLM-L6-v2)"]
         Embedder -->|Sub-ms Dot Product| Indexes[".npz Vector Indexes (eu_ai_act, bias_lexicon, facts)"]
         API --> Guard["Semaphore(2) & SHA256 LRU Cache"]
@@ -33,7 +43,7 @@ During retrieval benchmarking, vector dot-product calculation was confirmed sub-
 ### 2. Built Container & Asset Footprint
 - **Built Docker Image Size**: **[MEASURED]** **1.01 GB** (`docker images governance-api:local` - includes `python:3.13-slim` base, ONNX runtime, tokenizer binaries, vector indices, and Python site-packages).
 - **External Weights File (`data/model.onnx.data`)**: **[MEASURED]** **71.4 MB** (copied into container during Docker build).
-- **Cloud Run Cold Start Latency**: **[ESTIMATED]** **~15s–25s** (includes GCP container scheduling, image pull, and **[MEASURED]** **2.25s** Python/ONNX module import time).
+- **Space Sleep & Cold Start Behavior**: Free CPU Hugging Face Spaces enter sleep mode after period of inactivity. Cold wake latency includes container initialization plus **[MEASURED]** **2.25s** Python/ONNX module import time (exact wake time measured post-deployment).
 
 ---
 
@@ -47,7 +57,7 @@ During retrieval benchmarking, vector dot-product calculation was confirmed sub-
 | **Upstream RPM Limit** | 15 RPM | Enforced by Gemini 3.5 Flash-Lite free tier |
 | **Endpoint Rate Limit** | 5 req / hour / IP | SlowAPI IP rate limiter |
 | **Concurrency Ceiling** | `Semaphore(2)` | Protects against free-tier rate limit exhaustion |
-| **Cloud Run Ceiling** | `--max-instances=3` | Strict infrastructure cost ceiling |
+| **Infrastructure Cost Ceiling** | Structural Free Tier | Hugging Face Spaces Free CPU tier (no billing account required) |
 
 ---
 
@@ -93,9 +103,9 @@ governance-api/
 │   ├── index.html         # Frontend landing page
 │   ├── vercel.json        # Vercel security headers & CSP
 │   └── assets/            # Frontend JS & CSS
-├── Dockerfile             # Multi-stage production container build
+├── Dockerfile             # Multi-stage production container build (Port 7860)
 ├── .dockerignore          # Docker build exclusion list
-├── deploy.sh              # Cloud Run deployment script
+├── deploy.sh              # Hugging Face Space git push script
 └── requirements.txt       # Production dependencies (No PyTorch)
 ```
 
@@ -107,11 +117,11 @@ governance-api/
 # 1. Install runtime dependencies
 pip install -r requirements.txt
 
-# 2. Run local development environment (API on 8080 + UI on 3000 concurrently)
+# 2. Run local development environment (API on 7860 + UI on 3000 concurrently)
 python scripts/dev.py
 
 # 3. Or run backend server standalone
-python -m uvicorn app.main:app --port 8080 --reload
+python -m uvicorn app.main:app --port 7860 --reload
 
 # 4. Rebuild vector indexes
 python scripts/build_index.py --all
