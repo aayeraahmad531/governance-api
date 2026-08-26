@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.guards import limiter
 from app.llm import SchemaValidationFailed, UpstreamUnavailable
-from app.routers import bias, compliance, hallucination
+from app.routers import bias, compliance, hallucination, challenge
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("governance_api.access")
@@ -109,3 +109,4 @@ async def debug_crash(request: Request):
 app.include_router(bias.router)
 app.include_router(compliance.router)
 app.include_router(hallucination.router)
+app.include_router(challenge.router)

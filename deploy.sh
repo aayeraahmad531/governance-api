@@ -11,5 +11,5 @@ gcloud run deploy governance-api \
   --max-instances=3 \
   --memory=1Gi \
   --timeout=120 \
-  --set-env-vars LLM_PROVIDER=gemini,ALLOWED_ORIGINS="https://governance-api.vercel.app,http://localhost:3000" \
+  --set-env-vars LLM_PROVIDER=gemini,ALLOWED_ORIGINS="https://aayera-ahmad.vercel.app,http://localhost:3000" \
   --set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest

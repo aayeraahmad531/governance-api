@@ -224,3 +224,117 @@ function renderFooter(){
     "<br>Demos call a service that sleeps when idle. The first run may take a few seconds to wake it.";
 }
 document.addEventListener("DOMContentLoaded",renderFooter);
+
+/* ---------- experience accordion ---------- */
+document.addEventListener("DOMContentLoaded",function(){
+  const items=document.querySelectorAll(".acc-item");
+  items.forEach(function(it){
+    const btn=it.querySelector(".acc-head");
+    if(!btn)return;
+    btn.addEventListener("click",function(){
+      const open=it.hasAttribute("data-open");
+      items.forEach(function(o){
+        o.removeAttribute("data-open");
+        const b=o.querySelector(".acc-head");
+        if(b)b.setAttribute("aria-expanded","false");
+      });
+      if(!open){it.setAttribute("data-open","1");btn.setAttribute("aria-expanded","true")}
+    });
+  });
+});
+
+/* ---------- skills filter ---------- */
+document.addEventListener("DOMContentLoaded",function(){
+  const btns=document.querySelectorAll(".filt");
+  const tiles=document.querySelectorAll(".tile");
+  if(!btns.length||!tiles.length)return;
+  btns.forEach(function(b){
+    b.addEventListener("click",function(){
+      const f=b.getAttribute("data-f");
+      btns.forEach(function(x){x.classList.remove("on")});
+      b.classList.add("on");
+      tiles.forEach(function(t){
+        t.classList.toggle("hide", f!=="all" && t.getAttribute("data-cat")!==f);
+      });
+    });
+  });
+});
+
+
+/* ---------- hero: adversarial challenge ----------
+   Visitor writes a false claim; the tester retrieves a source and grades it.
+   Requires POST /api/challenge {topic, claim} -> {verdict, confidence, reasoning, source}
+   Falls back to a canned response if the endpoint is unavailable. */
+document.addEventListener("DOMContentLoaded",function(){
+  const box=$("puz"); if(!box) return;
+  const go=$("puz-go"), out=$("puz-out"), prog=$("puz-prog"),
+        hint=$("puz-hint"), claimEl=$("puz-claim"), topicEl=$("puz-topic");
+
+  let left=3, caught=0, slipped=0, log=[];
+
+  const FALLBACK={verdict:"HALLUCINATED",confidence:.93,
+    reasoning:"The retrieved passage contradicts this claim on a specific detail. Nothing in the indexed source supports it.",
+    source:"Radium was discovered in 1898 by Marie and Pierre Curie, who extracted it from pitchblende residues at Jáchymov."};
+
+  function paint(){
+    prog.textContent = left>0 ? left+" attempt"+(left>1?"s":"")+" left" : "Done";
+    let h="";
+    log.forEach(function(e){
+      const cls = e.verdict==="ACCURATE" ? "ok" : (e.verdict==="HALLUCINATED" ? "hal" : "hal");
+      h+='<div class="puz-try"><div class="tq">“'+esc(e.claim)+'”</div>'+
+         '<div class="tr2"><span class="pv '+cls+'">'+esc(e.verdict)+'</span>'+
+         '<span class="puz-hint" style="margin:0">confidence '+Math.round(e.confidence*100)+'%</span></div>'+
+         '<div class="psrc"><b>Why</b>'+esc(e.reasoning)+'</div>'+
+         (e.source?'<div class="psrc"><b>Retrieved source</b>'+esc(e.source)+'</div>':'')+'</div>';
+    });
+    if(left===0){
+      h+='<div class="pfinal" style="padding-top:22px;border-top:1px solid #22272F;margin-top:18px">'+
+         '<div class="fs">Caught '+caught+' of 3'+(slipped?' <span>· '+slipped+' slipped through</span>':' <span>· nothing slipped through</span>')+'</div>'+
+         '<p>'+(slipped
+            ? 'One got past — which is worth knowing, and exactly why the tester returns the passage it graded against rather than just a verdict. You can check its work.'
+            : 'Every claim was checked against a retrieved passage, not against the model\'s memory. That is the whole difference: the grader has to point at something.')+
+         '</p></div>';
+    }
+    out.innerHTML=h;
+    out.classList.toggle("show", !!h);
+  }
+
+  go.addEventListener("click",async function(){
+    const claim=(claimEl.value||"").trim();
+    if(claim.length<12){hint.textContent="Write a bit more — at least a full sentence.";return}
+    if(left===0) return;
+    go.disabled=true; go.textContent="Checking…";
+    hint.textContent="retrieving a source and grading…";
+
+    let d=FALLBACK, live=false;
+    if(API_BASE){
+      try{
+        const ctrl=new AbortController(), kill=setTimeout(()=>ctrl.abort(),45000);
+        const r=await fetch(API_BASE+"/api/challenge",{method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({topic:topicEl.value,claim:claim}),signal:ctrl.signal});
+        clearTimeout(kill);
+        if(r.ok){d=await r.json();live=true}
+      }catch(e){}
+    }
+    go.disabled=false; go.textContent="Submit claim";
+
+    const v=String(d.verdict||"UNCERTAIN").toUpperCase();
+    if(v==="HALLUCINATED") caught++; else slipped++;
+    log.unshift({claim:claim, verdict:v, confidence:d.confidence||0,
+                 reasoning:d.reasoning||"", source:d.source||""});
+    left--;
+    claimEl.value="";
+    hint.textContent = live
+      ? (left>0 ? "Try a subtler one — change a date, not the whole story." : "")
+      : "Service unreachable — showing a cached example.";
+    if(left===0){ go.disabled=true; go.textContent="Out of attempts";
+      go.insertAdjacentHTML("afterend",
+        '<a class="pbtn" href="hallucination.html" style="text-decoration:none;margin-left:10px">Run the full tester</a>'); }
+    paint();
+  });
+
+  claimEl.addEventListener("keydown",function(e){
+    if((e.metaKey||e.ctrlKey)&&e.key==="Enter") go.click();
+  });
+});

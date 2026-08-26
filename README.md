@@ -1,9 +1,11 @@
 # governance-api
 
-Unified governance FastAPI service wrapping enterprise AI auditing & compliance tools:
+Unified governance FastAPI service for AI auditing, evaluation, and compliance tools:
 - **`POST /api/bias`**: Audits job descriptions for gender, age, and cultural bias.
 - **`POST /api/compliance`**: Audits AI systems against EU AI Act requirements.
 - **`POST /api/hallucination`**: Measures LLM hallucination rates on indexed topics.
+
+**Measured retrieval optimization:** 218.0 ms → 4.7 ms for ONNX query embedding (46.1× speedup).
 
 ---
 
@@ -32,7 +34,7 @@ During retrieval benchmarking, vector dot-product calculation was confirmed sub-
 
 ### 2. Built Container & Asset Footprint
 - **Built Docker Image Size**: **[MEASURED]** **1.01 GB** (`docker images governance-api:local` - includes `python:3.13-slim` base, ONNX runtime, tokenizer binaries, vector indices, and Python site-packages).
-- **External Weights File (`data/model.onnx.data`)**: **[MEASURED]** **71.4 MB** (copied into container during Docker build).
+- **External Weights File (`data/model.onnx.data`)**: **[MEASURED]** **90.9 MB** (copied into container during Docker build).
 - **Cloud Run Cold Start Latency**: **[ESTIMATED]** **~15s–25s** (includes GCP container scheduling, image pull, and **[MEASURED]** **2.25s** Python/ONNX module import time).
 
 ---
@@ -82,7 +84,7 @@ governance-api/
 │   └── routers/           # Endpoint handlers (bias, compliance, hallucination)
 ├── data/
 │   ├── model.onnx         # ONNX transformer model
-│   ├── model.onnx.data    # ONNX model weight tensors (90.8 MB)
+│   ├── model.onnx.data    # ONNX model weight tensors (90.9 MB)
 │   ├── bias_lexicon.npz   # Bias vector index
 │   ├── eu_ai_act.npz      # EU AI Act vector index
 │   ├── facts.npz          # Wikipedia facts index

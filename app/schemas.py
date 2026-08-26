@@ -75,3 +75,17 @@ class HallucinationResponse(BaseModel):
     questions_tested: int
     hallucination_rate: float
     results: List[HallucinationQueryResult]
+
+
+# --- Challenge Schemas ---
+class ChallengeRequest(BaseModel):
+    topic: str = Field(..., description="Topic to challenge.")
+    claim: str = Field(..., max_length=240, description="Visitor's claim to grade (max 240 chars).")
+
+
+class ChallengeResponse(BaseModel):
+    verdict: str = Field(..., description="ACCURATE | HALLUCINATED | UNCERTAIN")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence score between 0.0 and 1.0.")
+    reasoning: str = Field(..., description="1-2 sentences on what the source says versus what the claim says.")
+    source: str = Field(..., description="The exact retrieved passage the grading rested on, verbatim.")
+
